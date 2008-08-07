@@ -29,8 +29,8 @@ enum {
   DEVICE_NONE       = 0,  /* No peripheral */
   DEVICE_PAD2B      = 1,  /* Standard 2-button digital joystick/gamepad */
   DEVICE_PADDLE     = 2,  /* Paddle controller; rotary dial with fire button */
-  DEVICE_LIGHTGUN   = 3,  /* Sega Light Phaser; Light Gun with trigger button */
-  DEVICE_SPORTSPAD  = 4,  /* Sports Pad controller; analog stick with 2 buttons */
+  DEVICE_SPORTSPAD  = 3,  /* Sports Pad controller; analog stick with 2 buttons */
+  DEVICE_LIGHTGUN   = 4,  /* Sega Light Phaser; Light Gun with trigger button */
 };
 
 typedef struct {

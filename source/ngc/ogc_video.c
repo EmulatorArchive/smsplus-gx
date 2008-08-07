@@ -335,7 +335,7 @@ static void gxScale(void)
 		else
 		{
 			/* borders are emulated */
-			if ((sms.console == CONSOLE_GGMS) || ((sms.console == CONSOLE_GG) && !option.extra_gg))
+			if ((sms.console == CONSOLE_GGMS) || (sms.console == CONSOLE_GG))
 			{
 				/* SMS display scaled into GG screen */
 				xscale = 182;
@@ -364,16 +364,6 @@ static void gxScale(void)
 		yshift = gc_pal ? 1 : 2;
 	}
 
-  /* user configuration */
-  if (!option.aspect)
-	{
-    xscale += option.xscale;
-    yscale += option.yscale;
-  }
-
-  xshift += option.xshift;
-  yshift += option.yshift;
-
 	/* double resolution */
 	if (option.render)
 	{
@@ -381,7 +371,13 @@ static void gxScale(void)
     yshift *= 2;
 	}
 
-  /* update matrix */
+  /* user configuration */
+  xscale += option.xscale;
+  yscale += option.yscale;
+  xshift += option.xshift;
+  yshift += option.yshift;
+
+	/* update GX scaling */
   square[6] = square[3]  =  xscale + xshift;
 	square[0] = square[9]  = -xscale + xshift;
 	square[4] = square[1]  =  yscale + yshift;
@@ -392,7 +388,6 @@ static void gxScale(void)
 /* Reinitialize GX */
 void ogc_video__reset()
 {
-	GXRModeObj *rmode;
   Mtx p;
 
   /* reset PAL flag */
@@ -414,7 +409,7 @@ void ogc_video__reset()
     tvmodes[1]->xfbMode = VI_XFBMODE_DF;
   }
 
-  rmode = option.render ? tvmodes[gc_pal*2 + 1] : tvmodes[gc_pal*2];
+  GXRModeObj *rmode = option.render ? tvmodes[gc_pal*2 + 1] : tvmodes[gc_pal*2];
 	VIDEO_Configure (rmode);
 	VIDEO_ClearFrameBuffer(rmode, xfb[whichfb], COLOR_BLACK);
 	VIDEO_Flush();
@@ -445,7 +440,7 @@ void ogc_video__update()
 	  bitmap.viewport.changed = 0;
 	  
     /* update texture size */
-	  if ((sms.console == CONSOLE_GG) && !option.overscan && !option.extra_gg)
+	  if ((sms.console == CONSOLE_GG) && !option.overscan)
 	  {
 		  /* Game Gear display is 160 x 144 pixels */
 		  offset  = 96; /* 48 * bitmap.granularity */
@@ -471,12 +466,7 @@ void ogc_video__update()
 
     /* reinitialize texture */
 	  GX_InvalidateTexAll ();
-	  GX_InitTexObj (&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_TRUE);
-
-    if (option.render == 0)
-    {
-      GX_InitTexObjLOD(&texobj,GX_NEAR,GX_NEAR_MIP_NEAR,2.5,9.0,0.0,GX_FALSE,GX_FALSE,GX_ANISO_1);
-    }
+	  GX_InitTexObj (&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
   }
 
   /* fill texture data */
@@ -538,24 +528,23 @@ void ogc_video__init(void)
       - set menu video mode (fullscreen, 480i or 576i)
       - set emulator rendering TV modes (PAL/MPAL/NTSC/EURGB60)
    */
+
   vmode = VIDEO_GetPreferredMode(NULL);
 
   /* adjust display settings */
   switch (vmode->viTVMode >> 2)
   {
     case VI_PAL:  /* 576 lines (PAL 50Hz) */
-
       TV60hz_240p.viTVMode = VI_TVMODE_EURGB60_DS;
       TV60hz_480i.viTVMode = VI_TVMODE_EURGB60_INT;
       option.tv_mode = 1;
       gc_pal = 1;
 
-      /* display should be centered vertically (borders) */
+      /* force menu display to 480 vertical lines */
       vmode = &TVPal574IntDfScale;
       vmode->xfbHeight = 480;
       vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
       vmode->viHeight = 480;
-
       break;
     
     case VI_NTSC: /* 480 lines (NTSC 60hz) */

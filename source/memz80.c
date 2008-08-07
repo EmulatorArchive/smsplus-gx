@@ -39,7 +39,7 @@ void memctrl_w(uint8 data)
 			case 0x00:
 			case 0x08:
 				/* enables CART */
-				if (cart.loaded) slot.rom = cart.rom;
+				if (cart.loaded) slot.rom   = cart.rom;
 				else slot.rom = NULL;
 				slot.pages = cart.pages;
 				slot.mapper = cart.mapper;

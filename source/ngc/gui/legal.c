@@ -90,10 +90,6 @@ void legal ()
   }
   else WriteCentre (ypos, "Developed with DevkitPPC and libOGC");
 
-#ifdef HW_RVL
-  SetScreen ();
-  sleep(1);
-#endif
   WriteCentre (ypos, "Press A to continue");
   SetScreen ();
   WaitButtonA ();

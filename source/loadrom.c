@@ -34,8 +34,8 @@ typedef struct
   char *name;
 } rominfo_t;
 
-int gamecount = 83;
-rominfo_t game_list[83] =
+int gamecount = 82;
+rominfo_t game_list[82] =
 {
   /* games that require CODEMASTER mapper */
   {0x29822980, 0, DEVICE_PAD2B, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
@@ -205,8 +205,6 @@ rominfo_t game_list[83] =
    "Spacegun"},
   {0x5359762D, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Wanted"},
-  {0x0ca95637, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
-   "Laser Ghost"},
 
   /* games that require Paddle (4) */
   {0xf9dbb533, 0, DEVICE_PADDLE, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS,
@@ -237,7 +235,6 @@ void set_config()
   sms.console = CONSOLE_SMS2;
   sms.territory = TERRITORY_EXPORT;
   sms.display = DISPLAY_NTSC;
-  sms.glasses_3d = 0;
   sms.device[0] = DEVICE_PAD2B;
   sms.device[1] = DEVICE_PAD2B;
 
@@ -324,7 +321,7 @@ void set_config()
 
   /* Overscan emulation (OFF by default for GG emulation) */
   if (sms.console == CONSOLE_GG) option.overscan = 0;
-  else if (option.aspect) option.overscan = 1;
+  else option.overscan = 1;
 }
 
 int load_rom (char *filename)
@@ -338,43 +335,43 @@ int load_rom (char *filename)
 #else
   if(cart.rom)
   {
-    free(cart.rom);
-    cart.rom = NULL;
+     free(cart.rom);
+     cart.rom = NULL;
   }
 
   if(check_zip(filename))
   {
-    char name[PATH_MAX];
-    int size = cart.size;
-    cart.rom = loadFromZipByName(filename, name, &size);
-    if(!cart.rom) return 0;
-    strcpy(game_name, name);
+     char name[PATH_MAX];
+     int size = cart.size;
+     cart.rom = loadFromZipByName(filename, name, &size);
+     if(!cart.rom) return 0;
+     strcpy(game_name, name);
   }
   else
   {
-    FILE *fd = NULL;
-    fd = fopen(filename, "rb");
-    if(!fd) return 0;
+     FILE *fd = NULL;
+     fd = fopen(filename, "rb");
+     if(!fd) return 0;
 
-    /* Seek to end of file, and get size */
-    fseek(fd, 0, SEEK_END);
-    cart.size = ftell(fd);
-    fseek(fd, 0, SEEK_SET);
+     /* Seek to end of file, and get size */
+     fseek(fd, 0, SEEK_END);
+     cart.size = ftell(fd);
+     fseek(fd, 0, SEEK_SET);
 
-    if (cart.size < 0x4000) cart.size = 0x4000;
-    cart.rom = malloc(cart.size);
-    if(!cart.rom) return 0;
-    fread(cart.rom, cart.size, 1, fd);
+	 if (cart.size < 0x4000) cart.size = 0x4000;
+	 cart.rom = malloc(cart.size);
+     if(!cart.rom) return 0;
+     fread(cart.rom, cart.size, 1, fd);
 
-    fclose(fd);
+     fclose(fd);
   }
 #endif
 
   /* Take care of image header, if present */
   if ((cart.size / 512) & 1)
   {
-    cart.size -= 512;
-    memcpy (cart.rom, cart.rom + 512, cart.size);
+      cart.size -= 512;
+      memcpy (cart.rom, cart.rom + 512, cart.size);
   }
 
   cart.pages = cart.size / 0x4000;

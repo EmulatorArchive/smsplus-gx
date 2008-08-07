@@ -33,7 +33,7 @@ vdp_t vdp;
 void vdp_init(void)
 {
   /* display area */
-  if ((sms.console == CONSOLE_GG) && (!option.extra_gg))
+  if (sms.console == CONSOLE_GG)
   {
     bitmap.viewport.w = 160;
     bitmap.viewport.x = 48;
@@ -134,7 +134,7 @@ void viewport_check(void)
 	}
 
 	/* update display area */
-	if ((sms.console != CONSOLE_GG) || option.extra_gg)
+	if (sms.console != CONSOLE_GG)
 	{
 		if(bitmap.viewport.h != vdp.height)
     {

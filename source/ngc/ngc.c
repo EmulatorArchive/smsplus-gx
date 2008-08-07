@@ -29,31 +29,20 @@ uint8 *smsrom;
 
 static void load_bios()
 {
-  /* reset BIOS flag */
-  bios.enabled  = 0;
+  /* reset BIOS found flag */
+  bios.enabled = 0;
 
-  /* open BIOS file */
-  FILE *fp = fopen("/smsplus/SMS_BIOS.sms", "rb");
+  /* open file */
+  FILE *fp = fopen("/smsplus/SMSBIOS.bin", "rb");
   if (fp == NULL) return;
 
-  /* get BIOS size */
-  fseek(fp , 0 , SEEK_END);
-  int filesize = ftell (fp);
-  fseek(fp, 0, SEEK_SET);
-
-  /* read BIOS file */
-  fread(bios.rom, 1, filesize, fp);
+  /* read file */
+  fread(bios.rom, 0x800, 1, fp);
   fclose(fp);
 
-  /* set BIOS size */
-  if (filesize < 0x4000) filesize = 0x4000;
-  bios.pages = filesize / 0x4000;
-
-  /* set BIOS flag */
+  /* update BIOS flags */
   if (option.use_bios) bios.enabled = 3;
   else bios.enabled = 2;
-
-  set_config();
 }
 
 static void init_machine (void)

@@ -22,6 +22,12 @@
 #include "shared.h"
 #include "font.h"
 
+/* max number of inputs */
+#define MAX_INPUTS 2
+
+/* number of configurable keys */
+#define MAX_KEYS 5
+
 /* configurable keys */
 #define KEY_BUTTON1 0   
 #define KEY_BUTTON2 1
@@ -31,8 +37,17 @@
 
 int ConfigRequested = 1;
 
+static const char *keys_name[MAX_KEYS] =
+{
+  "Button 1",
+  "Button 2",
+  "Pause",
+  "SoftReset",
+  "Menu"
+};
+
 /* gamepad default map (this can be reconfigured) */
-u16 pad_keymap[MAX_INPUTS][MAX_KEYS] =
+static u16 pad_keymap[MAX_INPUTS][MAX_KEYS] =
 {
   {PAD_BUTTON_B, PAD_BUTTON_A, PAD_BUTTON_START, PAD_TRIGGER_L, PAD_TRIGGER_Z},
   {PAD_BUTTON_B, PAD_BUTTON_A, PAD_BUTTON_START, PAD_TRIGGER_L, PAD_TRIGGER_Z}
@@ -54,7 +69,7 @@ static u16 pad_keys[9] =
 #ifdef HW_RVL
 
 /* wiimote default map (this can be reconfigured) */
-u32 wpad_keymap[MAX_INPUTS*3][MAX_KEYS] =
+static u32 wpad_keymap[MAX_INPUTS*3][MAX_KEYS] =
 {
   /* Wiimote #1 */
   {WPAD_BUTTON_1, WPAD_BUTTON_2, WPAD_BUTTON_PLUS, WPAD_BUTTON_MINUS, WPAD_BUTTON_HOME},
@@ -67,7 +82,7 @@ u32 wpad_keymap[MAX_INPUTS*3][MAX_KEYS] =
   {WPAD_CLASSIC_BUTTON_B, WPAD_CLASSIC_BUTTON_A, WPAD_CLASSIC_BUTTON_PLUS, WPAD_CLASSIC_BUTTON_MINUS, WPAD_CLASSIC_BUTTON_HOME}
 };
 
-/* directional buttons default mapping (FIXED) */
+/* directinal buttons default mapping (this can NOT be reconfigured) */
 #define PAD_UP    0   
 #define PAD_DOWN  1
 #define PAD_LEFT  2
@@ -106,19 +121,9 @@ static u32 wpad_keys[20] =
 };
 #endif
 
-static const char *keys_name[MAX_KEYS] =
-{
-  "Button 1",
-  "Button 2",
-  "Pause",
-  "SoftReset",
-  "Menu"
-};
-
-u8 softreset = 0;
 static void set_softreset(void)
 {
-  softreset = 1;
+  input.system |= INPUT_RESET;
 }
 
 /*******************************
@@ -130,13 +135,6 @@ static void pad_config(int num)
   u16 p;
   u8 quit;
   char msg[30];
-
-  u32 connected = PAD_ScanPads();
-  if ((connected & (1<<num)) == 0)
-  {
-    WaitPrompt("PAD is not connected !");
-    return;
-  }
 
   /* configure keys */
   for (i=0; i<MAX_KEYS; i++)
@@ -243,12 +241,8 @@ static void pad_update()
       input.system |= (sms.console == CONSOLE_GG) ? INPUT_START : INPUT_PAUSE;
 
     /* SOFT RESET */
-    if (((p & PAD_TRIGGER_R) && (p & PAD_TRIGGER_L)) || softreset)
-    {
+    if (p & pad_keymap[i][KEY_RESET])
       input.system |= INPUT_RESET;
-      softreset = 0;
-      SYS_SetResetCallback(set_softreset);
-    }
 
     /* BUTTONS 1&2 */
     if (p & pad_keymap[i][KEY_BUTTON1]) input.pad[i] |= INPUT_BUTTON1;
@@ -262,17 +256,16 @@ static void pad_update()
 #ifdef HW_RVL
 #define PI 3.14159265f
 
-static s8 WPAD_StickX(u8 chan,u8 right)
+static s8 WPAD_StickX(WPADData *data,u8 which)
 {
   float mag = 0.0;
   float ang = 0.0;
-  WPADData *data = WPAD_Data(chan);
 
   switch (data->exp.type)
   {
-    case WPAD_EXP_NUNCHUK:
-    case WPAD_EXP_GUITARHERO3:
-      if (right == 0)
+    case WPAD_EXP_NUNCHAKU:
+    case WPAD_EXP_GUITAR_HERO3:
+      if (which == 0)
       {
         mag = data->exp.nunchuk.js.mag;
         ang = data->exp.nunchuk.js.ang;
@@ -280,7 +273,7 @@ static s8 WPAD_StickX(u8 chan,u8 right)
       break;
 
     case WPAD_EXP_CLASSIC:
-      if (right == 0)
+      if (which == 0)
       {
         mag = data->exp.classic.ljs.mag;
         ang = data->exp.classic.ljs.ang;
@@ -305,17 +298,16 @@ static s8 WPAD_StickX(u8 chan,u8 right)
 }
 
 
-static s8 WPAD_StickY(u8 chan, u8 right)
+static s8 WPAD_StickY(WPADData *data,u8 which)
 {
   float mag = 0.0;
   float ang = 0.0;
-  WPADData *data = WPAD_Data(chan);
 
   switch (data->exp.type)
   {
-    case WPAD_EXP_NUNCHUK:
-    case WPAD_EXP_GUITARHERO3:
-      if (right == 0)
+    case WPAD_EXP_NUNCHAKU:
+    case WPAD_EXP_GUITAR_HERO3:
+      if (which == 0)
       {
         mag = data->exp.nunchuk.js.mag;
         ang = data->exp.nunchuk.js.ang;
@@ -323,7 +315,7 @@ static s8 WPAD_StickY(u8 chan, u8 right)
       break;
 
     case WPAD_EXP_CLASSIC:
-      if (right == 0)
+      if (which == 0)
       {
         mag = data->exp.classic.ljs.mag;
         ang = data->exp.classic.ljs.ang;
@@ -409,26 +401,24 @@ static void wpad_config(u8 pad)
 
 static void wpad_update(void)
 {
-  int i,use_wpad;
+  int i;
   u32 exp;
   u32 p;
   s8 x,y;
-  struct ir_t ir;
+  WPADData wpad;
 
   /* update WPAD data */
   WPAD_ScanPads();
 
-  for (i=0; i<2; i++)
+  for (i=0; i<MAX_INPUTS; i++)
   {
     /* check WPAD status */
-    if ((WPAD_Probe(i, &exp) == WPAD_ERR_NONE))
+    if (WPAD_Probe(i, &exp) == WPAD_ERR_NONE)
     {
       p = WPAD_ButtonsHeld(i);
-      x = WPAD_StickX(i, 0);
-      y = WPAD_StickY(i, 0);
-
-      if ((i == 0) && (exp == WPAD_EXP_CLASSIC)) use_wpad = 1;
-      else use_wpad = 0;
+      WPAD_Read(i, &wpad);
+      x = WPAD_StickX(&wpad, 0);
+      y = WPAD_StickY(&wpad, 0);
 
       /* check emulated device type */
       switch (sms.device[i])
@@ -441,14 +431,6 @@ static void wpad_update(void)
           else if ((p & wpad_dirmap[exp][PAD_DOWN])  || (y < -70)) input.pad[i] |= INPUT_DOWN;
           if ((p & wpad_dirmap[exp][PAD_LEFT])  || (x < -60)) input.pad[i] |= INPUT_LEFT;
           else if ((p & wpad_dirmap[exp][PAD_RIGHT]) || (x >  60)) input.pad[i] |= INPUT_RIGHT;
-
-          if (use_wpad)
-          {
-            if ((p & wpad_dirmap[0][PAD_UP])    || (y >  70)) input.pad[1] |= INPUT_UP;
-            else if ((p & wpad_dirmap[0][PAD_DOWN])  || (y < -70)) input.pad[1] |= INPUT_DOWN;
-            if ((p & wpad_dirmap[0][PAD_LEFT])  || (x < -60)) input.pad[1] |= INPUT_LEFT;
-            else if ((p & wpad_dirmap[0][PAD_RIGHT]) || (x >  60)) input.pad[1] |= INPUT_RIGHT;
-          }
 
           break;
 
@@ -468,11 +450,10 @@ static void wpad_update(void)
           else if (y) input.analog[i][1] = (u8)(128 - y);
 
           /* by default, use IR pointing */
-          WPAD_IR(i, &ir);
-          if (ir.valid)
+          if ((wpad.ir.x != 0) || (wpad.ir.y != 0))
           {
-            input.analog[i][0] = (ir.x * 4) / 10;
-            input.analog[i][1] = ir.y / 2;
+            input.analog[i][0] = (wpad.ir.x * 4) / 10;
+            input.analog[i][1] = wpad.ir.y / 2;
             if (p & WPAD_BUTTON_A) input.pad[i] |= INPUT_BUTTON1;
           }
 
@@ -493,7 +474,7 @@ static void wpad_update(void)
       u8 index = exp + (3 * i);
    
       /* MENU */
-      if ((p & wpad_keymap[index][KEY_MENU]) || (p & WPAD_BUTTON_HOME))
+      if (p & wpad_keymap[index][KEY_MENU])
       {
         ConfigRequested = 1;
         return;
@@ -504,25 +485,16 @@ static void wpad_update(void)
         input.system |= (sms.console == CONSOLE_GG) ? INPUT_START : INPUT_PAUSE;
 
       /* RESET */
-      if (((p & WPAD_CLASSIC_BUTTON_PLUS) && (p & WPAD_CLASSIC_BUTTON_MINUS)) ||
-          ((p & WPAD_BUTTON_PLUS) && (p & WPAD_BUTTON_MINUS)) || softreset)
-      {
-        input.system |= INPUT_RESET;
-        softreset = 0;
-        SYS_SetResetCallback(set_softreset);
-      }
-      
+      if (p & wpad_keymap[index][KEY_RESET])
+        set_softreset();
+
       /* BUTTON 1 */
       if (p & wpad_keymap[index][KEY_BUTTON1])
         input.pad[i] |= INPUT_BUTTON1;
-      if (use_wpad && (p & wpad_keymap[0][KEY_BUTTON1]))
-        input.pad[1] |= INPUT_BUTTON1;
 
       /* BUTTON 2 */
       if (p & wpad_keymap[index][KEY_BUTTON2])
         input.pad[i] |= INPUT_BUTTON2;
-      if (use_wpad && (p & wpad_keymap[0][KEY_BUTTON2]))
-        input.pad[1] |= INPUT_BUTTON2;
     }
   }
 }
@@ -536,11 +508,14 @@ void ogc_input__init(void)
 {
   PAD_Init ();
 #ifdef HW_RVL
-  WPAD_Shutdown();
   WPAD_Init();
-	WPAD_SetIdleTimeout(60);
-  WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
-  WPAD_SetVRes(WPAD_CHAN_ALL,640,480);
+	WPAD_SetSleepTime(60);
+  int i;
+  for(i=0; i<2; i++)
+  {
+    WPAD_SetDataFormat(i,WPAD_FMT_CORE_ACC_IR);
+    WPAD_SetVRes(i,640,480);
+  }
 #endif
   /* register SOFTRESET */
   SYS_SetResetCallback(set_softreset);
@@ -591,33 +566,21 @@ u16 ogc_input__getMenuButtons(void)
   else if (y < -60) p |= PAD_BUTTON_DOWN;
 
 #ifdef HW_RVL
-  struct ir_t ir;
   u32 exp;
   if (WPAD_Probe(0, &exp) == WPAD_ERR_NONE)
   {
     WPAD_ScanPads();
     u32 q = WPAD_ButtonsDown(0);
-    x = WPAD_StickX(0, 0);
-    y = WPAD_StickY(0, 0);
+    WPADData wpad;
+    WPAD_Read(0, &wpad);
+    x = WPAD_StickX(&wpad, 0);
+    y = WPAD_StickY(&wpad, 0);
 
     /* default directions */
-    WPAD_IR(0, &ir);
-    if (ir.valid)
-    {
-      /* Wiimote is pointed toward screen */
-      if ((q & WPAD_BUTTON_UP) || (y > 70))         p |= PAD_BUTTON_UP;
-      else if ((q & WPAD_BUTTON_DOWN) || (y < -70)) p |= PAD_BUTTON_DOWN;
-      if ((q & WPAD_BUTTON_LEFT) || (x < -60))      p |= PAD_BUTTON_LEFT;
-      else if ((q & WPAD_BUTTON_RIGHT) || (x > 60)) p |= PAD_BUTTON_RIGHT;
-    }
-    else
-    {
-      /* Wiimote is used horizontally */
-      if ((q & WPAD_BUTTON_RIGHT) || (y > 70))         p |= PAD_BUTTON_UP;
-      else if ((q & WPAD_BUTTON_LEFT) || (y < -70)) p |= PAD_BUTTON_DOWN;
-      if ((q & WPAD_BUTTON_UP) || (x < -60))      p |= PAD_BUTTON_LEFT;
-      else if ((q & WPAD_BUTTON_DOWN) || (x > 60)) p |= PAD_BUTTON_RIGHT;
-    }
+    if ((q & WPAD_BUTTON_UP) || (y > 70))         p |= PAD_BUTTON_UP;
+    else if ((q & WPAD_BUTTON_DOWN) || (y < -70)) p |= PAD_BUTTON_DOWN;
+    if ((q & WPAD_BUTTON_LEFT) || (x < -60))      p |= PAD_BUTTON_LEFT;
+    else if ((q & WPAD_BUTTON_RIGHT) || (x > 60)) p |= PAD_BUTTON_RIGHT;
 
     /* default keys */
     if (q & WPAD_BUTTON_MINUS)  p |= PAD_TRIGGER_L;

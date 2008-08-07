@@ -3,27 +3,7 @@ SMSPLUS for GC/wii:
 ---------------------
 
 
-15/07/2008:
------------
-[SMS, GG]
-- added an option to disable original Sprite Limit emulation (reduce sprite flickering)
-- added an option to display the hidden parts of the original Game Gear LCD screen
-- added Laser Ghost in "Light Phaser" game database
-- fixed a bug which prevented "normal" games displaying correctly after loading a 3D game
-
-[NGC/Wii]
-- added automatic alphabetical filesorting (Marty Disibio)
-- fixed Wii/Gamecube RESET button handler (softreset)
-- added support for horizontal wiimote handling in Menu (activated when wiimote is not pointed towards the screen)
-- added custom input ports setting (PHASER,PADDLE, GAMEPAD or NONE), this is still automatically set for games which need specific peripherals
-- keys mapping are now saved in config file
-- when Classic Controller is inserted in Port #1, Wiimote #1 can now be used to control player #2
-- "Soft-Reset" key is now fixed to avoid accidental resets: Buttons + & - on wiimote/classic controller, Triggers L & R on gamecube pad
-- fixed "stretch" mode being canceled after loading a new game
-- fixed SMS BIOS detection (place the BIOS rom on SDCARD in /smsplus/SMS_BIOS.sms)
-
-
-01/06/2008:
+30/05/2008:
 -----------
 [SMS, GG]
 - fixed port $3E emulation: fix Gain Ground, Ninja Gaiden,...
@@ -36,7 +16,6 @@ SMSPLUS for GC/wii:
 - added automatic FreezeState support (OFF by default, check "system options")
 - added automatic config file support
 - /smsplus/saves is now automatically created if it does not exist
-- assigned Reset Button to SMS Soft-Reset
 
 [Wii only]
 - added automatic TV mode detection (from SYSCONF), no more PAL60 version needed

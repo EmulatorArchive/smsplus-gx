@@ -450,7 +450,7 @@ void render_obj_sms(int line)
       int n = st[0x81 + (i << 1)];
 
       /* Bump sprite count */
-      if (option.spritelimit) count++;
+      count++;
 
       /* Too many sprites on this line ? */
       if(count == 9)

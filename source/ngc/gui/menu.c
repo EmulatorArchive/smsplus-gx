@@ -24,6 +24,153 @@
 #include "config.h"
 #include "font.h"
 
+
+/* basically, this is copying image data into the framebuffer */
+#ifdef USE_NEWMENU
+#include "gfx.h"
+typedef struct 
+{
+  u8 *data;
+  u32 size;
+} t_buttons;
+
+s8 menu = 0;
+u8 raw_data[14400] ATTRIBUTE_ALIGN (32);
+
+void drawbutton(int xoffset, int yoffset, int width, int height)
+{
+  int rows, cols;
+  int fboffset = (xoffset /2 ) + (yoffset * 320);
+  int i = 0;
+  for (rows = 0; rows < height; rows++)
+  {
+    for (cols = 0; cols < (width /2); cols++)
+    {
+      xfb[whichfb][fboffset + cols] = (raw_data[i] << 24) | (raw_data[i+1] << 16) | (raw_data[i+2] << 8) | raw_data[i+3];
+      i+=4;
+    }
+    fboffset += 320;
+  }
+}	
+
+/* draw each button menu */
+void drawmenu (t_buttons items[], u8 maxitems, u8 selected, u8 draw_column)
+{
+  int i,num,xoffset,yoffset,width;
+  unsigned long outbytes;
+  ClearScreen ();
+
+  yoffset = 116 + ((308 - (maxitems*40 - 10))/2);
+
+  /* two-column menu */
+  if (draw_column)
+  {
+    for (i = 0; i < maxitems; i++)
+    {
+      /* first column */
+      num = i * 3;
+      outbytes = 18000;
+      uncompress ((Bytef *)(&raw_data[0]), &outbytes, (Bytef *)(items[num].data), items[num].size);
+      drawbutton(196,yoffset,100,30);
+
+      /* second column */
+      num = (i * 3) + 1;
+      xoffset = 316;
+      width = 120;
+      if (i == selected)
+      {
+        num += 1;
+        xoffset = 304;
+        width = 140;
+      }
+
+      if (items[num].data != NULL)
+      {
+        outbytes = 18000;
+        uncompress ((Bytef *)(&raw_data[0]), &outbytes, (Bytef *)(items[num].data), items[num].size);
+        drawbutton(xoffset,yoffset,width,30);
+      }
+      yoffset += 40;
+    }
+  }
+  else
+  {
+    /* single column menu */
+    for (i = 0; i < maxitems; i++)
+    {
+      num = i * 2;
+      xoffset = 210;
+      width = 220;
+      if (i == selected)
+      {
+        num += 1;
+        xoffset = 200;
+        width = 240;
+      }
+
+      outbytes = 18000;
+      uncompress ((Bytef *)(&raw_data[0]), &outbytes, (Bytef *)(items[num].data), items[num].size);
+      drawbutton(xoffset,yoffset,width,30);
+      yoffset += 40;
+    }
+  }
+
+  SetScreen ();
+}
+
+int domenu (t_buttons items[], int maxitems, u8 fast)
+{
+  int redraw = 1;
+  int quit = 0;
+  short p;
+  int ret = 0;
+
+  while (quit == 0)
+  {
+    if (redraw)
+	  {
+	    drawmenu (items, maxitems, menu, draw_column);
+	    redraw = 0;
+	  }
+
+    p = ogc_input__getMenuButtons();
+
+    if (p & PAD_BUTTON_UP)
+	  {
+	    redraw = 1;
+	    menu--;
+      if (menu < 0) menu = maxitems - 1;
+	  }
+
+    if (p & PAD_BUTTON_DOWN)
+	  {
+      redraw = 1;
+      menu++;
+      if (menu == maxitems) menu = 0;
+  	}
+
+    if ((p & PAD_BUTTON_A) || (p & PAD_BUTTON_RIGHT))
+  	{
+      quit = 1;
+      ret = menu;
+    }
+	  
+    if (p & PAD_BUTTON_LEFT)
+    {
+       quit = 1;
+       ret = 0 - 2 - menu;
+    }
+
+    if (p & PAD_BUTTON_B)
+    {
+      quit = 1;
+      ret = -1;
+    }
+  }
+
+  return ret;
+}
+#else
 /***************************************************************************
  * drawmenu
  *
@@ -115,6 +262,8 @@ int domenu (char items[][20], int maxitems, u8 fastmove)
 
   return ret;
 }
+#endif
+
 
 /****************************************************************************
  * Options menu
@@ -238,10 +387,141 @@ void dispmenu ()
   int i;
 	menu = 0;
 
+#ifdef USE_NEWMENU
+  t_buttons options_1_buttons[27] = 
+  {
+    {&image_aspect[0], aspect_COMPRESSED},
+    {&image_original_1[0], original_1_COMPRESSED},
+    {&image_original_2[0], original_2_COMPRESSED},
+    {&image_render[0], render_COMPRESSED},
+    {&image_original_1[0], original_1_COMPRESSED},
+    {&image_original_2[0], original_2_COMPRESSED},
+    {&image_tvmode[0], tvmode_COMPRESSED},
+    {&image_tv_60hz_1[0], tv_60hz_1_COMPRESSED},
+    {&image_tv_60hz_2[0], tv_60hz_2_COMPRESSED},
+    {&image_borders[0], borders_COMPRESSED},
+    {&image_enabled_1[0], enabled_1_COMPRESSED},
+    {&image_enabled_2[0], enabled_2_COMPRESSED},
+    {&image_palette[0], palette_COMPRESSED},
+    {&image_pal_normal_1[0], pal_normal_1_COMPRESSED},
+    {&image_pal_normal_2[0], pal_normal_2_COMPRESSED},
+    {&image_center_x[0], center_x_COMPRESSED},
+    {NULL, option.xshift},
+    {NULL, option.xshift},
+    {&image_center_y[0], center_y_COMPRESSED},
+    {NULL, option.yshift},
+    {NULL, option.yshift},
+    {&image_scale_x[0], scale_x_COMPRESSED},
+    {NULL, option.xscale},
+    {NULL, option.xscale},
+    {&image_scale_y[0], scale_y_COMPRESSED},
+    {NULL, option.yscale},
+    {NULL, option.yscale}
+  };
+#else
 	char items[9][20];
+#endif
 
 	while (quit == 0)
 	{
+#ifdef USE_NEWMENU
+    if (option.aspect)
+    {
+      options_1_buttons[1].data = &image_original_1[0];
+      options_1_buttons[2].data = &image_original_2[0];
+      options_1_buttons[1].size = original_1_COMPRESSED;
+      options_1_buttons[2].size = original_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[1].data = &image_stretch_1[0];
+      options_1_buttons[2].data = &image_stretch_2[0];
+      options_1_buttons[1].size = stretch_1_COMPRESSED;
+      options_1_buttons[2].size = stretch_2_COMPRESSED;
+    }
+
+    if (option.render == 1)
+    {
+      options_1_buttons[4].data = &image_interlaced_1[0];
+      options_1_buttons[5].data = &image_interlaced_2[0];
+      options_1_buttons[4].size = interlaced_1_COMPRESSED;
+      options_1_buttons[5].size = interlaced_2_COMPRESSED;
+    }
+    else if (option.render == 2)
+    {
+      options_1_buttons[4].data = &image_progressive_1[0];
+      options_1_buttons[5].data = &image_progressive_2[0];
+      options_1_buttons[4].size = progressive_1_COMPRESSED;
+      options_1_buttons[5].size = progressive_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[4].data = &image_original_1[0];
+      options_1_buttons[5].data = &image_original_2[0];
+      options_1_buttons[4].size = original_1_COMPRESSED;
+      options_1_buttons[5].size = original_2_COMPRESSED;
+    }
+
+    if (option.tv_mode == 1)
+    {
+      options_1_buttons[7].data = &image_tv_50hz_1[0];
+      options_1_buttons[8].data = &image_tv_50hz_2[0];
+      options_1_buttons[7].size = tv_50hz_1_COMPRESSED;
+      options_1_buttons[8].size = tv_50hz_2_COMPRESSED;
+    }
+    else if (option.tv_mode == 2)
+    {
+      options_1_buttons[7].data = &image_tv_auto_1[0];
+      options_1_buttons[8].data = &image_tv_auto_2[0];
+      options_1_buttons[7].size = tv_auto_1_COMPRESSED;
+      options_1_buttons[8].size = tv_auto_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[7].data = &image_tv_60hz_1[0];
+      options_1_buttons[8].data = &image_tv_60hz_2[0];
+      options_1_buttons[7].size = tv_60hz_1_COMPRESSED;
+      options_1_buttons[8].size = tv_60hz_2_COMPRESSED;
+    }
+
+    if (option.overscan)
+    {
+      options_1_buttons[10].data = &image_enabled_1[0];
+      options_1_buttons[11].data = &image_enabled_2[0];
+      options_1_buttons[10].size = enabled_1_COMPRESSED;
+      options_1_buttons[11].size = enabled_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[10].data = &image_disabled_1[0];
+      options_1_buttons[11].data = &image_disabled_2[0];
+      options_1_buttons[10].size = disabled_1_COMPRESSED;
+      options_1_buttons[11].size = disabled_2_COMPRESSED;
+    }
+
+    if (option.palette == 1)
+    {
+      options_1_buttons[13].data = &image_pal_normal_1[0];
+      options_1_buttons[14].data = &image_pal_normal_2[0];
+      options_1_buttons[13].size = pal_normal_1_COMPRESSED;
+      options_1_buttons[14].size = pal_normal_2_COMPRESSED;
+    }
+    else if (option.palette == 2)
+    {
+      options_1_buttons[13].data = &image_pal_bright_1[0];
+      options_1_buttons[14].data = &image_pal_bright_2[0];
+      options_1_buttons[13].size = pal_bright_1_COMPRESSED;
+      options_1_buttons[14].size = pal_bright_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[13].data = &image_original_1[0];
+      options_1_buttons[14].data = &image_original_2[0];
+      options_1_buttons[13].size = original_1_COMPRESSED;
+      options_1_buttons[14].size = original_2_COMPRESSED;
+    }
+    ret = domenu (&options_1_buttons[0], count, 1);
+#else
     sprintf (items[0], "Aspect: %s", option.aspect ? "ORIGINAL" : "STRETCH");
 		if (option.render == 1) sprintf (items[1], "Render: BILINEAR");
 		else if (option.render == 2) sprintf (items[1], "Render: PROGRESS");
@@ -259,6 +539,7 @@ void dispmenu ()
 		sprintf (items[8], "Scale  Y:  %02d", option.yscale);
 
 		ret = domenu (&items[0], count, 1);
+#endif
 
 		switch (ret)
 		{
@@ -371,11 +652,29 @@ void sysmenu ()
 {
   s8 ret;
   u8 quit = 0;
-  u8 count = 7;
+  u8 count = 5;
   u8 prevmenu = menu;
   menu = 0;
 
-  char miscmenu[7][20];
+#ifdef USE_NEWMENU
+  t_buttons options_1_buttons[12] = 
+  {
+    {&image_fm_core[0], fm_core_COMPRESSED},
+    {&image_fm_1_1[0],  fm_1_1_COMPRESSED},
+    {&image_fm_1_2[0],  fm_1_2_COMPRESSED},
+    {&image_region[0],  region_COMPRESSED},
+    {&image_auto_1[0],  auto_1_COMPRESSED},
+    {&image_auto_2[0],  auto_2_COMPRESSED},
+    {&image_console[0], console_COMPRESSED},
+    {&image_auto_1[0],  auto_1_COMPRESSED},
+    {&image_auto_2[0],  auto_2_COMPRESSED},
+    {&image_bios[0],    borders_COMPRESSED},
+    {&image_disabled_1[0], disabled_1_COMPRESSED},
+    {&image_disabled_2[0], disabled_2_COMPRESSED}
+  };
+#else
+  char miscmenu[5][20];
+#endif
   
   if (option.fm_enable)
   {
@@ -388,6 +687,128 @@ void sysmenu ()
 
   while (quit == 0)
   {
+#ifdef USE_NEWMENU
+    if (fm_type == 1)
+    {
+      options_1_buttons[1].data = &image_fm_1_1[0];
+      options_1_buttons[2].data = &image_fm_1_2[0];
+      options_1_buttons[1].size = fm_1_1_COMPRESSED;
+      options_1_buttons[2].size = fm_1_2_COMPRESSED;
+    }
+    else if (fm_type == 2)
+    {
+      options_1_buttons[1].data = &image_fm_2_1[0];
+      options_1_buttons[2].data = &image_fm_2_2[0];
+      options_1_buttons[1].size = fm_2_1_COMPRESSED;
+      options_1_buttons[2].size = fm_2_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[1].data = &image_disabled_1[0];
+      options_1_buttons[2].data = &image_disabled_2[0];
+      options_1_buttons[1].size = disabled_1_COMPRESSED;
+      options_1_buttons[2].size = disabled_2_COMPRESSED;
+    }
+
+    if (option.country == 1)
+    {
+      options_1_buttons[4].data = &image_region_usa_1[0];
+      options_1_buttons[5].data = &image_region_usa_2[0];
+      options_1_buttons[4].size = region_usa_1_COMPRESSED;
+      options_1_buttons[5].size = region_usa_2_COMPRESSED;
+    }
+    else if (option.country == 2)
+    {
+      options_1_buttons[4].data = &image_region_europe_1[0];
+      options_1_buttons[5].data = &image_region_europe_2[0];
+      options_1_buttons[4].size = region_europe_1_COMPRESSED;
+      options_1_buttons[5].size = region_europe_2_COMPRESSED;
+    }
+    else if (option.country == 3)
+    {
+      options_1_buttons[4].data = &image_region_japan_1[0];
+      options_1_buttons[5].data = &image_region_japan_2[0];
+      options_1_buttons[4].size = region_japan_1_COMPRESSED;
+      options_1_buttons[5].size = region_japan_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[4].data = &image_auto_1[0];
+      options_1_buttons[5].data = &image_auto_2[0];
+      options_1_buttons[4].size = auto_1_COMPRESSED;
+      options_1_buttons[5].size = auto_2_COMPRESSED;
+    }
+
+    if (option.console == 1)
+    {
+      options_1_buttons[7].data = &image_system_sms1_1[0];
+      options_1_buttons[8].data = &image_system_sms1_2[0];
+      options_1_buttons[7].size = system_sms1_1_COMPRESSED;
+      options_1_buttons[8].size = system_sms1_2_COMPRESSED;
+    }
+    else if (option.console == 2)
+    {
+      options_1_buttons[7].data = &image_system_sms2_1[0];
+      options_1_buttons[8].data = &image_system_sms2_2[0];
+      options_1_buttons[7].size = system_sms2_1_COMPRESSED;
+      options_1_buttons[8].size = system_sms2_2_COMPRESSED;
+    }
+    else if (option.console == 3)
+    {
+      options_1_buttons[7].data = &image_system_gg_1[0];
+      options_1_buttons[8].data = &image_system_gg_2[0];
+      options_1_buttons[7].size = system_gg_1_COMPRESSED;
+      options_1_buttons[8].size = system_gg_2_COMPRESSED;
+    }
+    else if (option.console == 4)
+    {
+      options_1_buttons[7].data = &image_system_ggms_1[0];
+      options_1_buttons[8].data = &image_system_ggms_2[0];
+      options_1_buttons[7].size = system_ggms_1_COMPRESSED;
+      options_1_buttons[8].size = system_ggms_2_COMPRESSED;
+    }
+    else
+    {
+      options_1_buttons[7].data = &image_auto_1[0];
+      options_1_buttons[8].data = &image_auto_2[0];
+      options_1_buttons[7].size = auto_1_COMPRESSED;
+      options_1_buttons[8].size = auto_2_COMPRESSED;
+    }
+        
+    if (option.use_bios == 0)
+    {
+      options_1_buttons[10].data = &image_disabled_1[0];
+      options_1_buttons[11].data = &image_disabled_2[0];
+      options_1_buttons[10].size = disabled_1_COMPRESSED;
+      options_1_buttons[11].size = disabled_2_COMPRESSED;
+    }
+    else if (option.use_bios == 1)
+    {
+      options_1_buttons[10].data = &image_slota_1[0];
+      options_1_buttons[11].data = &image_slota_2[0];
+      options_1_buttons[10].size = slota_1_COMPRESSED;
+      options_1_buttons[11].size = slota_2_COMPRESSED;
+    }
+    else if (option.use_bios == 2)
+    {
+      options_1_buttons[10].data = &image_slotb_1[0];
+      options_1_buttons[11].data = &image_slotb_2[0];
+      options_1_buttons[10].size = slotb_1_COMPRESSED;
+      options_1_buttons[11].size = slotb_2_COMPRESSED;
+    }
+#ifdef HW_RVL
+    else if (option.use_bios == 3)
+    {
+      options_1_buttons[10].data = &image_front_1[0];
+      options_1_buttons[11].data = &image_front_2[0];
+      options_1_buttons[10].size = front_1_COMPRESSED;
+      options_1_buttons[11].size = front_2_COMPRESSED;
+    }
+
+	  ret = domenu (&options_1_buttons[0], count, 1);
+#endif
+
+#else
     strcpy (menutitle, "Press B to return");
       
     if (fm_type == 0) sprintf (miscmenu[0], "FM     -     OFF");
@@ -405,16 +826,16 @@ void sysmenu ()
     else if (option.console == 4) sprintf (miscmenu[2], "Console - GG-SMS");
     else sprintf (miscmenu[2], "Console -   AUTO");
         
-    sprintf (miscmenu[3], "Sprite Limit: %s", option.spritelimit ? " ON" : "OFF");
-	  sprintf (miscmenu[4], "Use BIOS: %s", option.use_bios ? " ON" : "OFF");
-		sprintf (miscmenu[5], "GG Extra: %s", option.extra_gg ? " ON" : "OFF");
+		if (option.use_bios) sprintf (miscmenu[3], "Use BIOS: ON");
+    else sprintf (miscmenu[3], "Use BIOS: OFF");
 
-		if (option.autofreeze == 0) sprintf (miscmenu[6], "Auto FREEZE: SDCARD");
-		else if (option.autofreeze == 1) sprintf (miscmenu[6], "Auto FREEZE: MCARD A");
-		else if (option.autofreeze == 2) sprintf (miscmenu[6], "Auto FREEZE: MCARD B");
-		else sprintf (miscmenu[6], "Auto FREEZE: OFF");
+		if (option.autofreeze == 0) sprintf (miscmenu[4], "Auto FREEZE: SDCARD");
+		else if (option.autofreeze == 1) sprintf (miscmenu[4], "Auto FREEZE: MCARD A");
+		else if (option.autofreeze == 2) sprintf (miscmenu[4], "Auto FREEZE: MCARD B");
+		else sprintf (miscmenu[4], "Auto FREEZE: OFF");
 
 	  ret = domenu (&miscmenu[0], count, 0);
+#endif
 
 	  switch (ret)
 	  {
@@ -452,26 +873,15 @@ void sysmenu ()
         system_init();
         break;
 
-		  case 3: /*** sprite flickering ***/
-				option.spritelimit ^= 1;
-				break;
-
-      case 4: /*** SMS BIOS ***/
+      case 3: /*** SMS BIOS ***/
         option.use_bios ^= 1;
         
         /* reset BIOS flag */
         bios.enabled &= ~1;
         if (option.use_bios) bios.enabled |= 1;
-
-        if ((bios.enabled == 3) || smsromsize) system_poweron();
         break;
 
-		  case 5: /*** GG Extra mode ***/
-				option.extra_gg ^= 1;
-        system_init();
-				break;
-
-      case 6:	/*** FreezeState autoload/autosave ***/
+      case 4:	/*** FreezeState autoload/autosave ***/
         option.autofreeze ++;
         if (option.autofreeze > 2) option.autofreeze = -1;
         break;
@@ -495,56 +905,71 @@ void ctrlmenu ()
   u8 quit = 0;
   u8 num = 0;
 #ifdef HW_RVL
-  u8 count = 5;
+  u8 count = 3;
 #else
-  u8 count = 4;
+  u8 count = 2;
 #endif
   u8 prevmenu = menu;
   menu = 0;
 
+#ifdef USE_NEWMENU
+  t_buttons ctrl_buttons[6] = 
+  {
+    {&image_player1_1[0], player1_1_COMPRESSED},
+    {&image_player1_2[0], player1_2_COMPRESSED},
+    {&image_gamepad_1[0], gamepad_1_COMPRESSED},
+    {&image_gamepad_2[0], gamepad_2_COMPRESSED},
+    {&image_wiimote_1[0], wiimote_1_COMPRESSED},
+    {&image_wiimote_2[0], wiimote_2_COMPRESSED}
+  };
+#else
   strcpy (menutitle, "Press B to return");
 #ifdef HW_RVL
-  char ctrlmenu[5][20];
-  sprintf (ctrlmenu[3], "Set GAMEPAD");
-  sprintf (ctrlmenu[4], "Set WIIMOTE");
+  char ctrlmenu[3][20];
+  sprintf (ctrlmenu[1], "Set GAMEPAD");
+  sprintf (ctrlmenu[2], "Set WIIMOTE");
 #else
-  char ctrlmenu[4][20];
-  sprintf (ctrlmenu[3], "Set GAMEPAD");
+  char ctrlmenu[2][20];
+  sprintf (ctrlmenu[1], "Set GAMEPAD");
+#endif
 #endif
 
   while (quit == 0)
   {
-    if (sms.device[0] == DEVICE_LIGHTGUN) sprintf (ctrlmenu[0], "Port A: PHASER");
-    else if (sms.device[0] == DEVICE_PADDLE) sprintf (ctrlmenu[0], "Port A: PADDLE");
-    else if (sms.device[0] == DEVICE_NONE) sprintf (ctrlmenu[0], "Port A: NONE");
-    else if (sms.device[0] == DEVICE_PAD2B) sprintf (ctrlmenu[0], "Port A: GAMEPAD");
-    if (sms.device[1] == DEVICE_LIGHTGUN) sprintf (ctrlmenu[1], "Port B: PHASER");
-    else if (sms.device[1] == DEVICE_PADDLE) sprintf (ctrlmenu[1], "Port B: PADDLE");
-    else if (sms.device[1] == DEVICE_NONE) sprintf (ctrlmenu[1], "Port B: NONE");
-    else if (sms.device[1] == DEVICE_PAD2B) sprintf (ctrlmenu[1], "Port B: GAMEPAD");
-    sprintf (ctrlmenu[2], "Configure Player: %d", num+1);
+#ifdef USE_NEWMENU
+    if (num)
+    {
+      ctrl_buttons[0].data = &image_player2_1[0];
+      ctrl_buttons[0].size = player2_1_COMPRESSED;
+      ctrl_buttons[1].data = &image_player2_2[0];
+      ctrl_buttons[1].size = player2_2_COMPRESSED;
+    }
+    else
+    {
+      ctrl_buttons[0].data = &image_player1_1[0];
+      ctrl_buttons[0].size = player1_1_COMPRESSED;
+      ctrl_buttons[1].data = &image_player1_2[0];
+      ctrl_buttons[1].size = player1_2_COMPRESSED;
+    }
+    ret = domenu (&ctrl_buttons[0], count, 0);
+
+#else
+    sprintf (ctrlmenu[0], "Configure Player: %d", num+1);
 	  ret = domenu (&ctrlmenu[0], count, 0);
+#endif
 
 	  switch (ret)
 	  {
-      case 0: /*** INPUT PORT A ***/
-        sms.device[0] = (sms.device[0] + 1) % 4;
-        break;
-
-      case 1: /*** INPUT PORT B ***/
-        sms.device[1] = (sms.device[1] + 1) % 4;
-        break;
-
-      case 2:	/*** Controller nr. ***/
+		  case 0:	/*** Controller nr. ***/
 			  num ^= 1;
 			  break;
 
-		  case 3:  /*** Gamepad ***/
+		  case 1:  /*** Gamepad ***/
 			  ogc_input__config(num, 0);
 			  break;
 
 #ifdef HW_RVL
-		  case 4:  /*** Wiimote ***/
+		  case 2:  /*** Wiimote ***/
         ogc_input__config(num, 1);
         break;
 #endif
@@ -570,33 +995,50 @@ void optionmenu ()
   u8 prevmenu = menu;
   menu = 0;
 
+ #ifdef USE_NEWMENU
+  t_buttons options_buttons[6] = 
+  {
+    {&image_system_1[0],   system_1_COMPRESSED},
+    {&image_system_2[0],   system_2_COMPRESSED},
+    {&image_display_1[0],  display_1_COMPRESSED},
+    {&image_display_2[0],  display_2_COMPRESSED},
+    {&image_controls_1[0], controls_1_COMPRESSED},
+    {&image_controls_2[0], controls_2_COMPRESSED}
+  };
+#else
   char miscmenu[3][20];
   strcpy (menutitle, "Press B to return");
   sprintf (miscmenu[0], "System Options");
   sprintf (miscmenu[1], "Display Options");
   sprintf (miscmenu[2], "Controls Options");
+#endif
 
   while (quit == 0)
   {
+#ifdef USE_NEWMENU
+    ret = domenu (&options_buttons[0], count, 0);
+#else
 	  ret = domenu (&miscmenu[0], count, 0);
-    switch (ret)
+#endif
+  switch (ret)
 	  {
-      case 0:	/*** FM Enabled ***/
-        sysmenu();
-        break;
 
-      case 1:  /*** Country ***/
-        dispmenu();
-        break;
+		case 0:	/*** FM Enabled ***/
+			sysmenu();
+			break;
 
-      case 2:  /*** Controllers ***/
-        ctrlmenu();
-        break;
+		case 1:  /*** Country ***/
+			dispmenu();
+			break;
 
-      case -1:
-        quit = 1;
-        break;
-    }
+		case 2:  /*** Controllers ***/
+			ctrlmenu();
+			break;
+
+		case -1:
+			quit = 1;
+			break;
+	  }
   }
 
   /* save config file */
@@ -620,18 +1062,76 @@ int loadsavemenu ()
   u8 count = 3;
   menu = 2;
 
+#ifdef USE_NEWMENU
+  t_buttons state_buttons[8] = 
+  {
+    {&image_mcard_1[0], mcard_1_COMPRESSED},
+    {&image_mcard_2[0], mcard_2_COMPRESSED},
+    {&image_slota_1[0], slota_1_COMPRESSED},
+    {&image_slota_2[0], slota_2_COMPRESSED},
+    {&image_statesave_1[0], statesave_1_COMPRESSED},
+    {&image_statesave_2[0], statesave_2_COMPRESSED},
+    {&image_stateload_1[0], stateload_1_COMPRESSED},
+    {&image_stateload_2[0], stateload_2_COMPRESSED}
+  };
+#else
   char items[3][20];
   strcpy (menutitle, "Press B to return");
   sprintf(items[1], "Save State");
   sprintf(items[2], "Load State");
+#endif
 
   while (quit == 0)
   {
+ #ifdef USE_NEWMENU
+   if (use_SDCARD)
+    {
+      state_buttons[0].data = &image_sdcard_1[0];
+      state_buttons[0].size = sdcard_1_COMPRESSED;
+      state_buttons[1].data = &image_sdcard_2[0];
+      state_buttons[1].size = sdcard_2_COMPRESSED;
+    }
+    else
+    {
+      state_buttons[0].data = &image_mcard_1[0];
+      state_buttons[0].size = mcard_1_COMPRESSED;
+      state_buttons[1].data = &image_mcard_2[0];
+      state_buttons[1].size = mcard_2_COMPRESSED;
+    }
+
+    if (CARDSLOT == 0)
+    {
+      state_buttons[2].data = &image_slota_1[0];
+      state_buttons[2].size = slota_1_COMPRESSED;
+      state_buttons[3].data = &image_slota_2[0];
+      state_buttons[3].size = slota_2_COMPRESSED;
+    }
+    else if (CARDSLOT == 1)
+    {
+      state_buttons[2].data = &image_slotb_1[0];
+      state_buttons[2].size = slotb_1_COMPRESSED;
+      state_buttons[3].data = &image_slotb_2[0];
+      state_buttons[3].size = slotb_2_COMPRESSED;
+    }
+#ifdef HW_RVL
+    else if (CARDSLOT == 2)
+    {
+      state_buttons[2].data = &image_front_1[0];
+      state_buttons[2].size = front_1_COMPRESSED;
+      state_buttons[3].data = &image_front_2[0];
+      state_buttons[3].size = front_2_COMPRESSED;
+    }
+#endif
+
+    ret = domenu (&state_buttons[0], count, 0);
+
+#else
     if (device == 0) sprintf(items[0], "Device: SDCARD");
     else if (device == 1) sprintf(items[0], "Device: MCARD A");
     else if (device == 2) sprintf(items[0], "Device: MCARD B");
 
 	  ret = domenu (&items[0], count, 0);
+#endif
 
 	  switch (ret)
 	  {
@@ -669,14 +1169,30 @@ void loadmenu ()
 	u8 count = 2;
 	menu = load_menu;
   
+#ifdef USE_NEWMENU
+  t_buttons load_buttons[6] = 
+  {
+    {&image_front_1[0], front_1_COMPRESSED},
+    {&image_front_2[0], front_2_COMPRESSED},
+    {&image_slota_1[0], slota_1_COMPRESSED},
+    {&image_slota_2[0], slota_2_COMPRESSED},
+    {&image_slotb_1[0], slotb_1_COMPRESSED},
+    {&image_slotb_2[0], slotb_2_COMPRESSED}
+  };
+#else
 	char item[2][20] = {
 		{"Load from DVD"},
 		{"Load from SDCARD"}
 	};
+#endif
 
 	while (quit == 0)
 	{
+#ifdef USE_NEWMENU
+    ret = domenu (&load_buttons[0], count, 0);
+#else
     ret = domenu (&item[0], count, 0);
+#endif
     
     switch (ret)
 		{
@@ -707,6 +1223,27 @@ void MainMenu ()
 	s8 ret;
 	u8 quit = 0;
 	menu = 0;
+
+#ifdef USE_NEWMENU
+	u8 count = 7;
+  t_buttons main_buttons[14] = 
+  {
+    {&image_play_1[0],  play_1_COMPRESSED},
+    {&image_play_2[0],  play_2_COMPRESSED},
+    {&image_reset_1[0],  reset_1_COMPRESSED},
+    {&image_reset_2[0],  reset_2_COMPRESSED},
+    {&image_load_1[0],  load_1_COMPRESSED},
+    {&image_load_2[0],  load_2_COMPRESSED},
+    {&image_options_1[0],  options_1_COMPRESSED},
+    {&image_options_2[0],  options_2_COMPRESSED},
+    {&image_save_1[0],  save_1_COMPRESSED},
+    {&image_save_2[0],  save_2_COMPRESSED},
+    {&image_loader_1[0],  loader_1_COMPRESSED},
+    {&image_loader_2[0],  loader_2_COMPRESSED},
+    {&image_exit_1[0],  exit_1_COMPRESSED},
+    {&image_exit_2[0],  exit_2_COMPRESSED}
+  };
+#else
 #ifdef HW_RVL
 	u8 count = 7;
 	char items[7][20] =
@@ -729,6 +1266,7 @@ void MainMenu ()
 		{"System Reboot"}
 #endif
 	};
+#endif
 
 	/* Switch to menu default rendering mode (60hz or 50hz, but always 480 lines) */
 	VIDEO_Configure (vmode);
@@ -739,14 +1277,18 @@ void MainMenu ()
 
 	while (quit == 0)
 	{
+#ifdef USE_NEWMENU
+    ret = domenu (&main_buttons[0], count, 0);
+#else
     strcpy (menutitle, "");
 		ret = domenu (&items[0], count,0);
+#endif
 
     switch (ret)
 		{
 			case -1:  /*** Button B ***/
 			case 0:	/*** Play Game ***/
-				if (smsromsize)
+				if (smsromsize || (bios.enabled == 3))
 				{
 				   quit = 1;
 				}
@@ -819,6 +1361,10 @@ void MainMenu ()
   while (PAD_ButtonsHeld(0))  PAD_ScanPads();
 #ifdef HW_RVL
   while (WPAD_ButtonsHeld(0)) WPAD_ScanPads();
+  WPAD_SetDataFormat(0,WPAD_FMT_CORE_ACC_IR);
+  WPAD_SetVRes(0,640,480);
+  WPAD_SetDataFormat(1,WPAD_FMT_CORE_ACC_IR);
+  WPAD_SetVRes(1,640,480);
 #endif
 
 	/*** Reinitalize GX ***/

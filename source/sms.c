@@ -83,7 +83,7 @@ void sms_init(void)
     data_bus_pulldown   = 0x00;
 
     /* FM unit */
-    sms.use_fm = option.fm_enable;
+	sms.use_fm = option.fm_enable;
 
     /* Initialize selected console emulation */
     switch(sms.console)
@@ -148,8 +148,8 @@ void sms_reset(void)
     sms.save        = 0x00;
     sms.fm_detect   = 0x00;
     sms.ioctrl      = 0xFF;
-	  sms.hlatch      = 0x00;
-    slot.rom		= NULL;
+	sms.hlatch      = 0x00;
+	slot.rom		= NULL;
 
 	if (IS_SMS && (bios.enabled == 3))
 	{

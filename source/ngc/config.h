@@ -22,8 +22,6 @@ typedef struct
   uint8 palette;
   int8 autofreeze;
   uint8 use_bios;
-  uint8 spritelimit;
-  uint8 extra_gg;
 } t_option;
 
 /* Global data */

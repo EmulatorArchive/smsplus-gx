@@ -21,17 +21,7 @@
 #ifndef _GC_INPUT_H_
 #define _GC_INPUT_H_
 
-/* max number of inputs */
-#define MAX_INPUTS 2
-
-/* number of configurable keys */
-#define MAX_KEYS 5
-
 extern int ConfigRequested;
-extern u16 pad_keymap[MAX_INPUTS][MAX_KEYS];
-#ifdef HW_RVL
-extern u32 wpad_keymap[MAX_INPUTS*3][MAX_KEYS];
-#endif
 
 extern void ogc_input__init(void);
 extern void ogc_input__update(void);
