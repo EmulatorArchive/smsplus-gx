@@ -23,6 +23,9 @@
 #include "dvd.h"
 #include "config.h"
 #include "font.h"
+#ifdef HW_RVL
+#include "di/di.h"
+#endif
 
 /***************************************************************************
  * drawmenu
@@ -660,46 +663,55 @@ int loadsavemenu ()
  * Load Rom menu
  *
  ****************************************************************************/
-#ifndef HW_RVL
 static u8 load_menu = 0;
+
 void loadmenu ()
 {
-	s8 ret;
-	u8 quit = 0;
-	u8 count = 2;
-	menu = load_menu;
-  
-	char item[2][20] = {
+	int ret;
+	int quit = 0;
+  int count = 4;
+  char item[4][20] = {
+		{"Load Recent"},
+		{"Load from SDCARD"},
 		{"Load from DVD"},
-		{"Load from SDCARD"}
+    {"Stop DVD Motor"}
 	};
 
+	menu = load_menu;
+	
 	while (quit == 0)
 	{
-    ret = domenu (&item[0], count, 0);
-    
-    switch (ret)
+		strcpy (menutitle, "Press B to return");
+		ret = domenu (&item[0], count, 0);
+		switch (ret)
 		{
 			case -1: /*** Button B ***/
 				quit = 1;
 				break;
-			case 0:	 /*** Load from DVD ***/
-				OpenDVD();
-				quit = 1;
+
+			case 0: /*** Load Recent ***/
+				quit = OpenHistory();
 				break;
+
 			case 1:  /*** Load from SCDARD ***/
-				OpenSD();
-				quit = 1;
+				quit = OpenSD();
 				break;
-		}
+
+      case 2:	 /*** Load from DVD ***/
+  			quit = OpenDVD();
+        break;
+  
+      case 3:  /*** Stop DVD Disc ***/
+        dvd_motor_off();
+				break;
+    }
 	}
 
 	load_menu = menu;
 }
-#endif
 
 /****************************************************************************
- * Main menu
+ * Main Menu
  *
  ****************************************************************************/
 void MainMenu ()
@@ -707,27 +719,16 @@ void MainMenu ()
 	s8 ret;
 	u8 quit = 0;
 	menu = 0;
-#ifdef HW_RVL
 	u8 count = 7;
 	char items[7][20] =
-#else
-	u8 count = 8;
-	char items[8][20] =
-#endif
 	{
 		{"Play Game"},
 		{"Hard Reset"},
 		{"Load New Game"},
 		{"Emulator Options"},
 		{"Savestate Manager"},
-#ifdef HW_RVL
 		{"Return to Loader"},
-		{"System Menu"}
-#else
-		{"Stop DVD Motor"},
-		{"SD/PSO Reload"},
 		{"System Reboot"}
-#endif
 	};
 
 	/* Switch to menu default rendering mode (60hz or 50hz, but always 480 lines) */
@@ -746,10 +747,7 @@ void MainMenu ()
 		{
 			case -1:  /*** Button B ***/
 			case 0:	/*** Play Game ***/
-				if (smsromsize)
-				{
-				   quit = 1;
-				}
+				if (smsromsize) quit = 1;
 				break;
 
 			case 1:
@@ -761,11 +759,7 @@ void MainMenu ()
 				break;
 
 			case 2:
-#ifdef HW_RVL
-        OpenSD();
-#else
         loadmenu();
-#endif
         menu = 0;
 				break;
 
@@ -777,12 +771,14 @@ void MainMenu ()
 				quit = loadsavemenu();
 				break;
 
-#ifdef HW_RVL
 			case 5:
         memfile_autosave();
         VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
         VIDEO_Flush();
         VIDEO_WaitVSync();
+#ifdef HW_RVL
+        DI_Close();
+#endif
         exit(0);
         break;
 
@@ -791,27 +787,13 @@ void MainMenu ()
         VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
         VIDEO_Flush();
         VIDEO_WaitVSync();
+#ifdef HW_RVL
+        DI_Close();
 				SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
-				break;
 #else
-			case 5:  /*** Stop DVD Motor ***/
-				ShowAction("Stopping DVD Motor ...");
-				dvd_motor_off();
-				break;
-
-      case 6:
-        memfile_autosave();
-        VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
-        VIDEO_Flush();
-        VIDEO_WaitVSync();
-        exit(0);
-        break;
-
-			case 7:
-        memfile_autosave();
 				SYS_ResetSystem(SYS_HOTRESET,0,0);
-				break;
 #endif
+				break;
 		}
 	}
 

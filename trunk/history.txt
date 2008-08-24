@@ -2,6 +2,14 @@
 SMSPLUS for GC/wii:
 ---------------------
 
+current:
+---------
+
+[NGC/Wii]
+- added ROM History for faster ROM access (Marty Disibio)
+- added DVD support in Wii mode (no modchip required)
+
+
 
 15/07/2008:
 -----------
