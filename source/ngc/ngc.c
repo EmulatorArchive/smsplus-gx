@@ -19,6 +19,12 @@
 #include "shared.h"
 #include "dvd.h"
 #include "font.h"
+#include "history.h"
+#ifndef HW_RVL
+#include "dvd.h"
+#else
+#include "di/di.h"
+#endif
 
 /***************************************************************************
  * SMSPlus Virtual Machine
@@ -88,24 +94,37 @@ int frameticker = 0;
 
 int main (int argc, char *argv[])
 {
+#ifdef HW_RVL
+	/* initialize Wii DVD interface first */
+  DI_Init();
+#endif
+
   u16 usBetweenFrames;
   long long now, prev;
   
-  /* Initialize GC subsystems */
+  /* Initialize OGC subsystems */
   ogc_video__init();
   ogc_input__init();
   ogc_audio__init();
+
 #ifndef HW_RVL
+  /* Initialize GC DVD interface */
   DVD_Init ();
   dvd_drive_detect();
 #endif
+
+  /* Initialize SDCARD Interface (LibFAT) */
   fatInitDefault();
 
   /* Default Config */
   set_option_defaults ();
   config_load();
 
-  /* Initialize VM */
+  /* Restore Recent Files list */
+  set_history_defaults();
+  history_load();
+
+  /* Initialize SMS Virtual Machine */
   init_machine ();
 
   /* Menu */

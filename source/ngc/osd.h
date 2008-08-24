@@ -18,6 +18,7 @@
 #include "ogc_input.h"
 #include "ogc_audio.h"
 #include "ogc_video.h"
+#include "history.h"
 
 /* globals */
 extern u32 diff_usec(long long start,long long end);
@@ -27,8 +28,9 @@ extern void legal();
 extern void set_config();
 extern void MainMenu();
 extern int ManageState(u8 direction, u8 device);
-extern void OpenDVD();
+extern int OpenDVD();
 extern int OpenSD();
+extern int OpenHistory();
 extern void memfile_autoload();
 extern void memfile_autosave();
 
