@@ -1,6 +1,39 @@
 
  Change log
 
+15/07/2008: Eke-Eke
+- added Laser Ghost in "Light Phaser" game database
+
+01/06/2008: Eke-Eke
+- fixed port $3E emulation: fix Gain Ground, Ninja Gaiden,...
+- added Paddle emulation: fix inputs in all games requiring paddle (Alex Kidd BMX Trial, Megumi Rescue,...), best handled using D-Pad or Analog Sticks.
+- added LightPhaser emulation: fix inputs in all games requiring the lightgun (Wanted, Rambo III, Operation Wolf,...), best handled through Wiimote IR pointing, can also be used through D-Pad or Analog Sticks.
+
+19/04/2008: Eke-Eke
+ - fixed VDP init when loading savestate: fix graphics in games using TMS9918 mode
+ - added port $3E emulation and full SMS BIOS support (see user notes)
+ - implemented SMS1 VDP "tilemap mirroring" bug: fix Y's (J) status bar when running in SMS1 mode
+ - updated Z80 core to last version (fix some undocumented behaviour): fix Rambo 3 "Game Over" screen & Robocop 3 "pause" bug
+ - corrected PAL CPU clock value
+ - modified FM Unit detection: fix FM music in many japanese games
+ - added full overscan emulation: when enabled, aspect ratio is exactly like on original hardware, including borders (horizontal borders
+ are generally completely hidden under TV edges)
+ - corrected Game Gear VDP handlers in SMS mode: fix colors in GG-MS mode
+ - improved Codemasters Mapper emulation: fix Excellent Dizzy Collection & Ernie Els Golf
+ - added Korean Mapper emulation: fix Sangokushi III & Dodgeball King
+ - adjusted SMS color palette values (compared side by side with a real PAL SMS 2)
+ - fixed Hcounter table (thanks to FluBBa)
+
+20/07/2007: Eke-Eke
+ - added 3D Glasses faking: fix graphics in games requiring 3D Glasses
+ - fixed VDP & Z80 SP registers initialization (usually done by BIOS): fixe games not working without BIOS (Ace of Aces, Shadow Dancer)
+ - completed game database for specific configuration (mappers, region, peripherals), based on Meka database
+
+27/03/2007: Eke-Eke
+ - corrected bug which made some SMS games not being fullscreen displayed
+ - modified sound mixer for more correct FM music (try Wonderboy III Dragon's Trap)
+ - FM is now disabled by default (only a few games use the FM unit and enabling FM forces the console type to japanese)
+
  [1.3]
 
  - Fixed last entry in CRC lookup table.
