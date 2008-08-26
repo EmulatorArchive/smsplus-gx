@@ -2,8 +2,8 @@
 SMSPLUS for GC/wii:
 ---------------------
 
-current:
----------
+26/08/2008:
+-----------
 
 [NGC/Wii]
 - added ROM History for faster ROM access (Marty Disibio)
