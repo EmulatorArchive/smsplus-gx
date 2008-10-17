@@ -251,8 +251,8 @@ void sound_mixer_ngc (int length)
 		else if (l < -32768) l = -32768;
 		if (r > 32767) r = 32767;
 		else if (r < -32768) r = -32768;
-		*sb++ = l;
 		*sb++ = r;
+		*sb++ = l;
 	}
 	
 	mixbuffer++;
