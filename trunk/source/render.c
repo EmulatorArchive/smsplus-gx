@@ -4,6 +4,10 @@
 */
 
 #include "shared.h"
+#include "sms_ntsc.h"
+
+/*** NTSC Filters ***/
+extern sms_ntsc_t sms_ntsc;
 
 uint8 sms_cram_expand_table[4];
 uint8 gg_cram_expand_table[16];
@@ -252,7 +256,7 @@ void render_line(int line)
 	/* Vertical borders */
   if ((vline < bitmap.viewport.y) || (vline >= bitmap.viewport.h + bitmap.viewport.y))
   {
-		memset(linebuf - 14, BACKDROP_COLOR, bitmap.width);
+		memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
   }
   else
   {
@@ -304,7 +308,8 @@ void render_line(int line)
   }
 
 #ifdef NGC
-	remap_8_to_16(vline);
+  if (option.ntsc)  sms_ntsc_blit(&sms_ntsc, ( SMS_NTSC_IN_T const * )pixel, internal_buffer, bitmap.viewport.w + 2*bitmap.viewport.x, vline);
+  else remap_8_to_16(vline);
 #else
 	if(bitmap.depth != 8) remap_8_to_16(vline);
 #endif
@@ -633,7 +638,7 @@ void remap_8_to_16(int line)
   int i;
   uint16 *p = (uint16 *)&bitmap.data[(line * bitmap.pitch)];
   int width = bitmap.viewport.w + 2*bitmap.viewport.x;
-	
+
 	for(i = 0; i < width; i++)
   {
     p[i] = pixel[ internal_buffer[i] & PIXEL_MASK ];

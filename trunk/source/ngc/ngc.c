@@ -20,11 +20,24 @@
 #include "dvd.h"
 #include "font.h"
 #include "history.h"
-#ifndef HW_RVL
+
+#ifdef HW_DOL
 #include "dvd.h"
 #else
 #include "di/di.h"
 #endif
+
+int Shutdown = 0;
+
+#ifdef HW_RVL
+/* Power Button callback */
+void Power_Off(void)
+{
+  Shutdown = 1;
+  ConfigRequested = 1;
+}
+#endif
+
 
 /***************************************************************************
  * SMSPlus Virtual Machine
@@ -74,7 +87,7 @@ static void init_machine (void)
 
   /* allocate global work bitmap */
   memset (&bitmap, 0, sizeof (bitmap));
-  bitmap.width = 284;
+  bitmap.width = 720;
   bitmap.height = 288;
   bitmap.depth = 16;
   bitmap.granularity = 2;
@@ -83,7 +96,7 @@ static void init_machine (void)
   bitmap.viewport.h = 192;
   bitmap.viewport.x = 0;
   bitmap.viewport.y = 0;
-  bitmap.data = malloc (bitmap.width * bitmap.height * bitmap.granularity);
+  bitmap.data =  memalign(32, bitmap.pitch * bitmap.height);
 }
  
 /***************************************************************************
@@ -91,11 +104,13 @@ static void init_machine (void)
  *
  ***************************************************************************/
 int frameticker = 0;
+bool use_FAT = 0;
 
 int main (int argc, char *argv[])
 {
 #ifdef HW_RVL
 	/* initialize Wii DVD interface first */
+  DI_Close();
   DI_Init();
 #endif
 
@@ -107,14 +122,23 @@ int main (int argc, char *argv[])
   ogc_input__init();
   ogc_audio__init();
 
-#ifndef HW_RVL
+#ifdef HW_DOL
   /* Initialize GC DVD interface */
   DVD_Init ();
   dvd_drive_detect();
 #endif
 
+#ifdef HW_RVL
+  /* Power Button callback */
+  SYS_SetPowerCallback(Power_Off);
+#endif
+
   /* Initialize SDCARD Interface (LibFAT) */
-  fatInitDefault();
+  if (fatInitDefault() == true)
+  {
+    use_FAT = 1;
+    fatEnableReadAhead (PI_DEFAULT, 6, 64);
+  }
 
   /* Default Config */
   set_option_defaults ();
@@ -127,7 +151,7 @@ int main (int argc, char *argv[])
   /* Initialize SMS Virtual Machine */
   init_machine ();
 
-  /* Menu */
+  /* Show Menu */
   legal ();
   MainMenu();
   ConfigRequested = 0;
@@ -177,6 +201,7 @@ int main (int argc, char *argv[])
       {
         /* Delay */
         while (!frameticker) usleep(10);	
+        
         system_frame (0);
       }
       

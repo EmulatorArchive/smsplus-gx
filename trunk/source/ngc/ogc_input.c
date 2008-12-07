@@ -22,6 +22,10 @@
 #include "shared.h"
 #include "font.h"
 
+#ifdef HW_RVL
+#include <wiiuse/wpad.h>
+#endif
+
 /* configurable keys */
 #define KEY_BUTTON1 0   
 #define KEY_BUTTON2 1
@@ -72,6 +76,9 @@ u32 wpad_keymap[MAX_INPUTS*3][MAX_KEYS] =
 #define PAD_DOWN  1
 #define PAD_LEFT  2
 #define PAD_RIGHT 3
+
+#define MAX_HELD_CNT 15
+static int held_cnt = 0;
 
 static u32 wpad_dirmap[3][4] =
 {
@@ -127,19 +134,21 @@ static void set_softreset(void)
 static void pad_config(int num)
 {
   int i,j;
+  int max = MAX_KEYS;
   u16 p;
   u8 quit;
   char msg[30];
 
-  u32 connected = PAD_ScanPads();
-  if ((connected & (1<<num)) == 0)
+  u32 pad = PAD_ScanPads() & (1<<num);
+  if (!pad)
   {
-    WaitPrompt("PAD is not connected !");
+    sprintf(msg, "PAD #%d is not connected !", num+1);
+    WaitPrompt(msg);
     return;
   }
 
   /* configure keys */
-  for (i=0; i<MAX_KEYS; i++)
+  for (i=0; i<max; i++)
   {
     /* remove any pending keys */
     while (PAD_ButtonsHeld(num))
@@ -260,6 +269,7 @@ static void pad_update()
   wiimote support
 *******************************/
 #ifdef HW_RVL
+
 #define PI 3.14159265f
 
 static s8 WPAD_StickX(u8 chan,u8 right)
@@ -347,28 +357,29 @@ static s8 WPAD_StickY(u8 chan, u8 right)
   return (s8)(val * 128.0f);
 }
 
-static void wpad_config(u8 pad)
+static void wpad_config(u8 num)
 {
   int i,j;
+  int max = MAX_KEYS;
   u8 quit;
-  u32 exp;
   char msg[30];
+  u32 current = 255;
 
-  /* check WPAD status */
-  if (WPAD_Probe(pad, &exp) != WPAD_ERR_NONE)
+  /* check wiimote status */
+  if (WPAD_Probe(num, &current) != WPAD_ERR_NONE)
   {
     WaitPrompt("Wiimote is not connected !");
     return;
   }
 
   /* index for wpad_keymap */
-  u8 index = exp + (pad * 3);
+  u8 index = current + (num * 3);
 
   /* loop on each mapped keys */
-  for (i=0; i<MAX_KEYS; i++)
+  for (i=0; i<max; i++)
   {
     /* remove any pending buttons */
-    while (WPAD_ButtonsHeld(pad))
+    while (WPAD_ButtonsHeld(num))
     {
       WPAD_ScanPads();
       VIDEO_WaitVSync();
@@ -389,7 +400,7 @@ static void wpad_config(u8 pad)
       /* get buttons */
       for (j=0; j<20; j++)
       {
-        if (WPAD_ButtonsDown(pad) & wpad_keys[j])
+        if (WPAD_ButtonsDown(num) & wpad_keys[j])
         {
           wpad_keymap[index][i]  = wpad_keys[j];
           quit = 1;
@@ -400,7 +411,7 @@ static void wpad_config(u8 pad)
   } /* loop for all keys */
 
   /* removed any pending buttons */
-  while (WPAD_ButtonsHeld(pad))
+  while (WPAD_ButtonsHeld(num))
   {
     WPAD_ScanPads();
     VIDEO_WaitVSync();
@@ -535,8 +546,8 @@ static void wpad_update(void)
 void ogc_input__init(void)
 {
   PAD_Init ();
+
 #ifdef HW_RVL
-  WPAD_Shutdown();
   WPAD_Init();
 	WPAD_SetIdleTimeout(60);
   WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
@@ -580,7 +591,10 @@ void ogc_input__config(u8 pad, u8 type)
 
 u16 ogc_input__getMenuButtons(void)
 {
-  /* gamecube pad */
+  /* slowdown input updates */
+  VIDEO_WaitVSync();
+
+  /* get gamepad inputs */
   PAD_ScanPads();
   u16 p = PAD_ButtonsDown(0);
   s8 x  = PAD_StickX(0);
@@ -591,59 +605,93 @@ u16 ogc_input__getMenuButtons(void)
   else if (y < -60) p |= PAD_BUTTON_DOWN;
 
 #ifdef HW_RVL
+  /* get wiimote + expansions inputs */
+  WPAD_ScanPads();
+  u32 q = WPAD_ButtonsDown(0);
+  u32 h = WPAD_ButtonsHeld(0);
+  x = WPAD_StickX(0, 0);
+  y = WPAD_StickY(0, 0);
+
+  /* is Wiimote directed toward screen (horizontal/vertical orientation) ? */
   struct ir_t ir;
-  u32 exp;
-  if (WPAD_Probe(0, &exp) == WPAD_ERR_NONE)
+  WPAD_IR(0, &ir);
+
+  /* wiimote directions */
+  if (q & WPAD_BUTTON_UP)         p |= ir.valid ? PAD_BUTTON_UP : PAD_BUTTON_LEFT;
+  else if (q & WPAD_BUTTON_DOWN)  p |= ir.valid ? PAD_BUTTON_DOWN : PAD_BUTTON_RIGHT;
+  else if (q & WPAD_BUTTON_LEFT)  p |= ir.valid ? PAD_BUTTON_LEFT : PAD_BUTTON_DOWN;
+  else if (q & WPAD_BUTTON_RIGHT) p |= ir.valid ? PAD_BUTTON_RIGHT : PAD_BUTTON_UP;
+  
+  if (h & WPAD_BUTTON_UP)
   {
-    WPAD_ScanPads();
-    u32 q = WPAD_ButtonsDown(0);
-    x = WPAD_StickX(0, 0);
-    y = WPAD_StickY(0, 0);
-
-    /* default directions */
-    WPAD_IR(0, &ir);
-    if (ir.valid)
+    held_cnt ++;
+    if (held_cnt == MAX_HELD_CNT)
     {
-      /* Wiimote is pointed toward screen */
-      if ((q & WPAD_BUTTON_UP) || (y > 70))         p |= PAD_BUTTON_UP;
-      else if ((q & WPAD_BUTTON_DOWN) || (y < -70)) p |= PAD_BUTTON_DOWN;
-      if ((q & WPAD_BUTTON_LEFT) || (x < -60))      p |= PAD_BUTTON_LEFT;
-      else if ((q & WPAD_BUTTON_RIGHT) || (x > 60)) p |= PAD_BUTTON_RIGHT;
-    }
-    else
-    {
-      /* Wiimote is used horizontally */
-      if ((q & WPAD_BUTTON_RIGHT) || (y > 70))         p |= PAD_BUTTON_UP;
-      else if ((q & WPAD_BUTTON_LEFT) || (y < -70)) p |= PAD_BUTTON_DOWN;
-      if ((q & WPAD_BUTTON_UP) || (x < -60))      p |= PAD_BUTTON_LEFT;
-      else if ((q & WPAD_BUTTON_DOWN) || (x > 60)) p |= PAD_BUTTON_RIGHT;
-    }
-
-    /* default keys */
-    if (q & WPAD_BUTTON_MINUS)  p |= PAD_TRIGGER_L;
-    if (q & WPAD_BUTTON_PLUS)   p |= PAD_TRIGGER_R;
-    if (q & WPAD_BUTTON_A)      p |= PAD_BUTTON_A;
-    if (q & WPAD_BUTTON_B)      p |= PAD_BUTTON_B;
-    if (q & WPAD_BUTTON_2)      p |= PAD_BUTTON_A;
-    if (q & WPAD_BUTTON_1)      p |= PAD_BUTTON_B;
-    if (q & WPAD_BUTTON_HOME)   p |= PAD_TRIGGER_Z;
-
-    /* classic controller expansion */
-    if (exp == WPAD_EXP_CLASSIC)
-    {
-      if (q & WPAD_CLASSIC_BUTTON_UP)         p |= PAD_BUTTON_UP;
-      else if (q & WPAD_CLASSIC_BUTTON_DOWN)  p |= PAD_BUTTON_DOWN;
-      if (q & WPAD_CLASSIC_BUTTON_LEFT)       p |= PAD_BUTTON_LEFT;
-      else if (q & WPAD_CLASSIC_BUTTON_RIGHT) p |= PAD_BUTTON_RIGHT;
-
-      if (q & WPAD_CLASSIC_BUTTON_FULL_L) p |= PAD_TRIGGER_L;
-      if (q & WPAD_CLASSIC_BUTTON_FULL_R) p |= PAD_TRIGGER_R;
-      if (q & WPAD_CLASSIC_BUTTON_A)      p |= PAD_BUTTON_A;
-      if (q & WPAD_CLASSIC_BUTTON_B)      p |= PAD_BUTTON_B;
-      if (q & WPAD_CLASSIC_BUTTON_HOME)   p |= PAD_TRIGGER_Z;
+      held_cnt = MAX_HELD_CNT - 2;
+      p |= ir.valid ? PAD_BUTTON_UP : PAD_BUTTON_LEFT;
     }
   }
-#endif
+  else if (h & WPAD_BUTTON_DOWN)
+  {
+    held_cnt ++;
+    if (held_cnt == MAX_HELD_CNT)
+    {
+      held_cnt = MAX_HELD_CNT - 2;
+      p |= ir.valid ? PAD_BUTTON_DOWN : PAD_BUTTON_RIGHT;
+    }
+  }
+  else if (h & WPAD_BUTTON_LEFT)
+  {
+    held_cnt ++;
+    if (held_cnt == MAX_HELD_CNT)
+    {
+      held_cnt = MAX_HELD_CNT - 2;
+      p |= ir.valid ? PAD_BUTTON_LEFT : PAD_BUTTON_DOWN;
+    }
+  }
+  else if (h & WPAD_BUTTON_RIGHT)
+  {
+    held_cnt ++;
+    if (held_cnt == MAX_HELD_CNT)
+    {
+      held_cnt = MAX_HELD_CNT - 2;
+      p |= ir.valid ? PAD_BUTTON_RIGHT : PAD_BUTTON_UP;
+    }
+  }
+  else
+  {
+    held_cnt = 0;
+  }
+
+  /* analog sticks */
+  if (y > 70)       p |= PAD_BUTTON_UP;
+  else if (y < -70) p |= PAD_BUTTON_DOWN;
+  if (x < -60)      p |= PAD_BUTTON_LEFT;
+  else if (x > 60)  p |= PAD_BUTTON_RIGHT;
+
+  /* classic controller directions */
+  if (q & WPAD_CLASSIC_BUTTON_UP)         p |= PAD_BUTTON_UP;
+  else if (q & WPAD_CLASSIC_BUTTON_DOWN)  p |= PAD_BUTTON_DOWN;
+  if (q & WPAD_CLASSIC_BUTTON_LEFT)       p |= PAD_BUTTON_LEFT;
+  else if (q & WPAD_CLASSIC_BUTTON_RIGHT) p |= PAD_BUTTON_RIGHT;
+
+  /* wiimote keys */
+  if (q & WPAD_BUTTON_MINUS)  p |= PAD_TRIGGER_L;
+  if (q & WPAD_BUTTON_PLUS)   p |= PAD_TRIGGER_R;
+  if (q & WPAD_BUTTON_A)      p |= PAD_BUTTON_A;
+  if (q & WPAD_BUTTON_B)      p |= PAD_BUTTON_B;
+  if (q & WPAD_BUTTON_2)      p |= PAD_BUTTON_A;
+  if (q & WPAD_BUTTON_1)      p |= PAD_BUTTON_B;
+  if (q & WPAD_BUTTON_HOME)   p |= PAD_TRIGGER_Z;
+
+  /* classic controller keys */
+  if (q & WPAD_CLASSIC_BUTTON_FULL_L) p |= PAD_TRIGGER_L;
+  if (q & WPAD_CLASSIC_BUTTON_FULL_R) p |= PAD_TRIGGER_R;
+  if (q & WPAD_CLASSIC_BUTTON_A)      p |= PAD_BUTTON_A;
+  if (q & WPAD_CLASSIC_BUTTON_B)      p |= PAD_BUTTON_B;
+  if (q & WPAD_CLASSIC_BUTTON_HOME)   p |= PAD_TRIGGER_Z;
+
+ #endif
 
   return p;
 }

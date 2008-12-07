@@ -2,6 +2,22 @@
 SMSPLUS for GC/wii:
 ---------------------
 
+[NGC/Wii]
+- added Blargg's NTSC Filter support (NTSC video artifacts emulation)
+- added an option to enable/disable bilinear filtering
+- removed embedded font, (re)enabled IPL font support: now should works for Qoob users too (thanks to emukiddid)
+- minor bugfixes and menu tweaks
+
+[NGC only]
+- added 480p support in menu
+
+[Wii only]
+- implemented fast scrolling in menu using Wiimote D-PAD
+- added "Power" button support
+- improved SDCARD access speed (svpe's "read-ahead" patch)
+- compiled with libogc CVS: SDHC support, Wiimote shutdown button support
+
+
 26/08/2008:
 -----------
 

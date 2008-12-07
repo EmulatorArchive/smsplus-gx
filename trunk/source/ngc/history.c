@@ -15,6 +15,8 @@ t_history history;
 
 void history_save()
 {
+  if (!use_FAT) return;
+
   /* first check if directory exist */
   DIR_ITER *dir = diropen("/smsplus");
   if (dir == NULL) mkdir("/smsplus",S_IRWXU);
