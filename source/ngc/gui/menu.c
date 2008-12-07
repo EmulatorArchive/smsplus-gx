@@ -24,7 +24,8 @@
 #include "config.h"
 #include "font.h"
 #ifdef HW_RVL
-#include "di/di.h"
+#include <wiiuse/wpad.h>
+#include <di/di.h>
 #endif
 
 /***************************************************************************
@@ -36,7 +37,7 @@
 char menutitle[60] = { "" };
 int menu = 0;
 
-void drawmenu (char items[][20], int maxitems, int selected)
+void drawmenu (char items[][25], int maxitems, int selected)
 {
   int i;
   int ypos;
@@ -61,7 +62,7 @@ void drawmenu (char items[][20], int maxitems, int selected)
  *
  * Returns index into menu array when A is pressed, -1 for B
  ****************************************************************************/
-int domenu (char items[][20], int maxitems, u8 fastmove)
+int domenu (char items[][25], int maxitems, u8 fastmove)
 {
   int redraw = 1;
   int quit = 0;
@@ -90,7 +91,8 @@ int domenu (char items[][20], int maxitems, u8 fastmove)
       menu++;
       if (menu == maxitems) menu = 0;
     }
-    else if (p & PAD_BUTTON_A)
+
+    if (p & PAD_BUTTON_A)
     {
       quit = 1;
       ret = menu;
@@ -131,7 +133,7 @@ void palmenu ()
   int ret;
   int quit = 0;
   int misccount = 6;
-  char miscmenu[6][20];
+  char miscmenu[6][25];
   int prevmenu = menu;
 
   strcpy (menutitle, "Press B to return");
@@ -230,51 +232,49 @@ void palmenu ()
 * Display options menu
 *
 ****************************************************************************/
-static uint8 old_overscan = 1;
 
 void dispmenu ()
 {
 	s8 ret;
 	u8 quit = 0;
-	u8 count = option.aspect ? 7 : 9;
+	u8 count = option.aspect ? 9 : 11;
 	u8 prevmenu = menu;
   int i;
 	menu = 0;
 
-	char items[9][20];
+	char items[11][25];
 
 	while (quit == 0)
 	{
-    sprintf (items[0], "Aspect: %s", option.aspect ? "ORIGINAL" : "STRETCH");
-		if (option.render == 1) sprintf (items[1], "Render: BILINEAR");
-		else if (option.render == 2) sprintf (items[1], "Render: PROGRESS");
+    strcpy (menutitle, option.aspect ? "Press B to return":"");
+    sprintf (items[0], "Aspect: %s", option.aspect ? "ORIGINAL" : "STRETCHED");
+		if (option.render == 1) sprintf (items[1], "Render: INTERLACED");
+		else if (option.render == 2) sprintf (items[1], "Render: PROGRESSIVE");
 		else sprintf (items[1], "Render: ORIGINAL");
 		if (option.tv_mode == 0) sprintf (items[2], "TV Mode: 60HZ");
 		else if (option.tv_mode == 1) sprintf (items[2], "TV Mode: 50HZ");
 		else sprintf (items[2], "TV Mode: 50/60HZ");
-		sprintf (items[3], "Overscan: %s", option.overscan ? " ON" : "OFF");
-		if (option.palette == 0) sprintf (items[4], "Palette: ORIGINAL");
-		else if (option.palette == 1) sprintf (items[4], "Palette:  NORMAL");
-		else if (option.palette == 2) sprintf (items[4], "Palette:  BRIGHT");
-		sprintf (items[5], "Center X: %s%02d",option. xshift < 0 ? "-":"+", abs(option.xshift));
-		sprintf (items[6], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
-		sprintf (items[7], "Scale  X:  %02d", option.xscale);
-		sprintf (items[8], "Scale  Y:  %02d", option.yscale);
+    sprintf (items[3], "Bilinear Filter: %s", option.bilinear ? " ON" : "OFF");
+    if (option.ntsc == 1) sprintf (items[4], "NTSC Filter: COMPOSITE");
+		else if (option.ntsc == 2) sprintf (items[4], "NTSC Filter: S-VIDEO");
+		else if (option.ntsc == 3) sprintf (items[4], "NTSC Filter: RGB");
+		else sprintf (items[4], "NTSC Filter: OFF");
+		sprintf (items[5], "Borders: %s", option.overscan ? " ON" : "OFF");
+		if (option.palette == 0) sprintf (items[6], "Palette: ORIGINAL");
+		else if (option.palette == 1) sprintf (items[6], "Palette:  NORMAL");
+		else if (option.palette == 2) sprintf (items[6], "Palette:  BRIGHT");
+		sprintf (items[7], "Center X: %s%02d",option. xshift < 0 ? "-":"+", abs(option.xshift));
+		sprintf (items[8], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
+		sprintf (items[9], "Scale  X:  %02d", option.xscale);
+		sprintf (items[10], "Scale  Y:  %02d", option.yscale);
 
 		ret = domenu (&items[0], count, 1);
 
 		switch (ret)
 		{
-			case 0: /*** aspect ratio ***/
+			case 0: /*** config.aspect ratio ***/
 				option.aspect ^= 1;
-				if (option.aspect) option.overscan = old_overscan;
-				else
-				{
-					old_overscan = option.overscan;
-					option.overscan = 0;
-				}
-				count = option.aspect ? 7 : 9;
-				vdp_init();
+        count = option.aspect ? 9 : 11;
 				break;
 
 			case 1: /*** rendering ***/
@@ -300,15 +300,23 @@ void dispmenu ()
 				option.tv_mode = (option.tv_mode + 1) % 3;
 				break;
 		
-			case 3: /*** overscan ***/
-				if (option.aspect)
-				{
-					option.overscan ^= 1;
-					vdp_init();
-				}
+			case 3: /*** bilinear filtering ***/
+				option.bilinear ^= 1;
+				bitmap.viewport.changed = 1;
 				break;
 
-			case 4:
+      case 4: /*** NTSC filter ***/
+				option.ntsc ++;
+        if (option.ntsc > 3) option.ntsc = 0;
+				bitmap.viewport.changed = 1;
+				break;
+				
+			case 5: /*** overscan emulation ***/
+        option.overscan ^= 1;
+        vdp_init();
+				break;
+
+			case 6:
 				option.palette = (option.palette + 1) % 3;
 				if (option.palette == 0)
 				{
@@ -332,26 +340,26 @@ void dispmenu ()
 				for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i, 1);
 				break;
 
-      case 5:	/*** Center X ***/
-			case -7:
+      case 7:	/*** Center X ***/
+			case -9:
 				if (ret<0) option.xshift --;
 				else option.xshift ++;
 				break;
 
-			case 6:	/*** Center Y ***/
-			case -8:
+			case 8:	/*** Center Y ***/
+			case -10:
 				if (ret<0) option.yshift --;
 				else option.yshift ++;
 				break;
 			
-			case 7:	/*** Scale X ***/
-			case -9:
+			case 9:	/*** Scale X ***/
+			case -11:
 				if (ret<0) option.xscale --;
 				else option.xscale ++;
 				break;
 
-			case 8:	/*** Scale Y ***/
-			case -10:
+			case 10:	/*** Scale Y ***/
+			case -12:
 				if (ret<0) option.yscale --;
 				else option.yscale ++;
 				break;
@@ -378,7 +386,7 @@ void sysmenu ()
   u8 prevmenu = menu;
   menu = 0;
 
-  char miscmenu[7][20];
+  char miscmenu[7][25];
   
   if (option.fm_enable)
   {
@@ -507,11 +515,11 @@ void ctrlmenu ()
 
   strcpy (menutitle, "Press B to return");
 #ifdef HW_RVL
-  char ctrlmenu[5][20];
+  char ctrlmenu[5][25];
   sprintf (ctrlmenu[3], "Set GAMEPAD");
   sprintf (ctrlmenu[4], "Set WIIMOTE");
 #else
-  char ctrlmenu[4][20];
+  char ctrlmenu[4][25];
   sprintf (ctrlmenu[3], "Set GAMEPAD");
 #endif
 
@@ -562,7 +570,7 @@ void ctrlmenu ()
 }
 
 /****************************************************************************
-* Option menu
+ * Main Option menu
 *
 ****************************************************************************/
 void optionmenu ()
@@ -573,7 +581,7 @@ void optionmenu ()
   u8 prevmenu = menu;
   menu = 0;
 
-  char miscmenu[3][20];
+  char miscmenu[3][25];
   strcpy (menutitle, "Press B to return");
   sprintf (miscmenu[0], "System Options");
   sprintf (miscmenu[1], "Display Options");
@@ -595,19 +603,15 @@ void optionmenu ()
       case 2:  /*** Controllers ***/
         ctrlmenu();
         break;
-
       case -1:
         quit = 1;
         break;
     }
   }
 
-  /* save config file */
   config_save();
-
   menu = prevmenu;
 }
-
 
 /****************************************************************************
 * Generic Load/Save menu
@@ -623,7 +627,7 @@ int loadsavemenu ()
   u8 count = 3;
   menu = 2;
 
-  char items[3][20];
+  char items[3][25];
   strcpy (menutitle, "Press B to return");
   sprintf(items[1], "Save State");
   sprintf(items[2], "Load State");
@@ -635,7 +639,6 @@ int loadsavemenu ()
     else if (device == 2) sprintf(items[0], "Device: MCARD B");
 
 	  ret = domenu (&items[0], count, 0);
-
 	  switch (ret)
 	  {
 		  case -1:
@@ -664,17 +667,19 @@ int loadsavemenu ()
  *
  ****************************************************************************/
 static u8 load_menu = 0;
+static u8 dvd_on = 0;
 
-void loadmenu ()
+int loadmenu ()
 {
+	int prevmenu = menu;
 	int ret;
 	int quit = 0;
-  int count = 4;
-  char item[4][20] = {
+  	int count = 3 + dvd_on;
+  	char item[4][25] = {
 		{"Load Recent"},
 		{"Load from SDCARD"},
 		{"Load from DVD"},
-    {"Stop DVD Motor"}
+    	{"Stop DVD Motor"}
 	};
 
 	menu = load_menu;
@@ -690,24 +695,35 @@ void loadmenu ()
 				break;
 
 			case 0: /*** Load Recent ***/
-				quit = OpenHistory();
+				load_menu = menu;
+        if (OpenHistory()) return 1;
 				break;
 
 			case 1:  /*** Load from SCDARD ***/
-				quit = OpenSD();
+				load_menu = menu;
+				if (OpenSD()) return 1;
 				break;
 
-      case 2:	 /*** Load from DVD ***/
-  			quit = OpenDVD();
+      case 2:
+				load_menu = menu;
+        if (OpenDVD())
+        {
+          dvd_on = 1;
+          return 1;
+        }
         break;
   
       case 3:  /*** Stop DVD Disc ***/
         dvd_motor_off();
+        dvd_on = 0;
+        count = 3 + dvd_on;
+				menu = load_menu;
 				break;
     }
 	}
 
-	load_menu = menu;
+  menu = prevmenu;
+  return 0;
 }
 
 /****************************************************************************
@@ -716,17 +732,17 @@ void loadmenu ()
  ****************************************************************************/
 void MainMenu ()
 {
-	s8 ret;
-	u8 quit = 0;
 	menu = 0;
-	u8 count = 7;
-	char items[7][20] =
+	int ret;
+	int quit = 0;
+	int count = 7;
+	char items[7][25] =
 	{
 		{"Play Game"},
 		{"Hard Reset"},
 		{"Load New Game"},
-		{"Emulator Options"},
 		{"Savestate Manager"},
+		{"Emulator Options"},
 		{"Return to Loader"},
 		{"System Reboot"}
 	};
@@ -740,6 +756,19 @@ void MainMenu ()
 
 	while (quit == 0)
 	{
+#ifdef HW_RVL
+    /* wii shutdown */
+    if (Shutdown)
+    {
+      /* autosave SRAM/State */
+      memfile_autosave();
+
+      /* shutdown Wii */
+      DI_Close();
+      SYS_ResetSystem(SYS_POWEROFF, 0, 0);
+    }
+#endif
+
     strcpy (menutitle, "");
 		ret = domenu (&items[0], count,0);
 
@@ -750,7 +779,7 @@ void MainMenu ()
 				if (smsromsize) quit = 1;
 				break;
 
-			case 1:
+			case 1: /*** Emulator Reset ***/
 				if ((bios.enabled == 3) || smsromsize)
 				{
 					system_poweron();
@@ -758,21 +787,21 @@ void MainMenu ()
 				}
 				break;
 
-			case 2:
-        loadmenu();
-        menu = 0;
+			case 2:	/*** Load ROM Menu ***/
+        		quit = loadmenu();
 				break;
 
-			case 3:
-				optionmenu();
+			case 3:	 /*** SaveState Manager ***/
+				quit = loadsavemenu();
 				break;
 
 			case 4:
-				quit = loadsavemenu();
+				optionmenu();
 				break;
 
 			case 5:
         memfile_autosave();
+        system_shutdown();
         VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
         VIDEO_Flush();
         VIDEO_WaitVSync();
@@ -784,6 +813,7 @@ void MainMenu ()
 
 			case 6:
         memfile_autosave();
+        system_shutdown();
         VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
         VIDEO_Flush();
         VIDEO_WaitVSync();
@@ -803,7 +833,7 @@ void MainMenu ()
   while (WPAD_ButtonsHeld(0)) WPAD_ScanPads();
 #endif
 
-	/*** Reinitalize GX ***/
+	/*** Reinitialize GX ***/
   ogc_video__reset();
 
 #ifndef HW_RVL

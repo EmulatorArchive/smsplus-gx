@@ -2,8 +2,13 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+/****************************************************************************
+ * Config Option 
+ *
+ ****************************************************************************/
 typedef struct
 {
+  char version[15];
   int sndrate;
   int country;
   int console;
@@ -15,10 +20,12 @@ typedef struct
   int16 yshift;
   int16 xscale;
   int16 yscale;
-  uint8 aspect;
-  uint8 render;
   uint8 tv_mode;
+  uint8 aspect;
   uint8 overscan;
+  uint8 render;
+  uint8 ntsc;
+  uint8 bilinear;
   uint8 palette;
   int8 autofreeze;
   uint8 use_bios;
@@ -30,8 +37,9 @@ typedef struct
 t_option option;
 
 
-extern void set_option_defaults ();
-extern void config_load();
 extern void config_save();
+extern void config_load();
+extern void set_option_defaults ();
+extern bool use_FAT;
 
 #endif /* _CONFIG_H_ */

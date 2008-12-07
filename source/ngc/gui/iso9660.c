@@ -26,7 +26,7 @@ int rootdirlength = 0;
 
 /** Global file entry table **/
 FILEENTRIES filelist[MAXFILES];
-static char dvdbuffer[2048];
+static char dvdbuffer[2048] ATTRIBUTE_ALIGN (32);
 
 /****************************************************************************
  * Primary Volume Descriptor

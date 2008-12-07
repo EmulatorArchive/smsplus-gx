@@ -4,8 +4,16 @@
 #include <fat.h>
 #include <sys/dir.h>
 
+#ifdef HW_RVL
+#define CONFIG_VERSION "SMSPLUS 1.3.1W"
+#else
+#define CONFIG_VERSION "SMSPLUS 1.3.1G"
+#endif
+
 void config_save()
 {
+  if (!use_FAT) return;
+
   /* first check if directory exist */
   DIR_ITER *dir = diropen("/smsplus");
   if (dir == NULL) mkdir("/smsplus",S_IRWXU);
@@ -33,7 +41,14 @@ void config_load()
   FILE *fp = fopen("/smsplus/smsplus.ini", "rb");
   if (fp == NULL) return;
 
+  /* read version */
+  char version[15];
+  fread(version, 15, 1, fp); 
+  fclose(fp);
+  if (strcmp(version,CONFIG_VERSION)) return;
+  
   /* read file */
+  fp = fopen("/smsplus/smsplus.ini", "rb");
   fread(&option, sizeof(option), 1, fp);
 
   /* load key mapping */
@@ -50,6 +65,9 @@ void config_load()
  *****************************************************************************/
 void set_option_defaults ()
 {
+  /* version TAG */
+  strncpy(option.version,CONFIG_VERSION,15);
+
 	option.sndrate      = 48000;
 	option.country      = 0;
 	option.console      = 0;
@@ -61,7 +79,9 @@ void set_option_defaults ()
   option.xscale       = 0;
   option.yscale       = 0;
   option.aspect       = 1;
-  option.render       = (vmode->viTVMode == VI_TVMODE_NTSC_PROG) ? 2 : 0;
+  option.render       = VIDEO_HaveComponentCable() ? 2 : 0;
+  option.ntsc         = 0;
+  option.bilinear     = 1;
   option.tv_mode      = 0;
   option.palette      = 1;
   option.autofreeze   = -1;
