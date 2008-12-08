@@ -23,6 +23,7 @@
 #include "dvd.h"
 #include "config.h"
 #include "font.h"
+
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
 #include <di/di.h>
@@ -756,19 +757,6 @@ void MainMenu ()
 
 	while (quit == 0)
 	{
-#ifdef HW_RVL
-    /* wii shutdown */
-    if (Shutdown)
-    {
-      /* autosave SRAM/State */
-      memfile_autosave();
-
-      /* shutdown Wii */
-      DI_Close();
-      SYS_ResetSystem(SYS_POWEROFF, 0, 0);
-    }
-#endif
-
     strcpy (menutitle, "");
 		ret = domenu (&items[0], count,0);
 
