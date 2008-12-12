@@ -3,13 +3,13 @@
 #define _FMINTF_H_
 
 enum {
-    SND_EMU2413,        /* Mitsutaka Okazaki's YM2413 emulator */
-    SND_YM2413          /* Jarek Burczynski's YM2413 emulator */
+  SND_EMU2413,  /* Mitsutaka Okazaki's YM2413 emulator */
+  SND_YM2413    /* Jarek Burczynski's YM2413 emulator */
 };
 
 typedef struct {
-    uint8 latch;
-    uint8 reg[0x40];
+  uint8 latch;
+  uint8 reg[0x40];
 } FM_Context;
 
 /* Function prototypes */

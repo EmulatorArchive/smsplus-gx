@@ -1,8 +1,9 @@
-/******************************************************************************
+/****************************************************************************
+ *  ogc_video.c
  *
- *  SMS Plus - Sega Master System / GameGear Emulator
+ *  SMS Plus GX video support
  *
- *  NGC/Wii Video support
+ *  code by Softdev (2006), Eke-Eke (2007,2008)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -17,7 +18,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  ***************************************************************************/
+
 
 #include "shared.h"
 #include "font.h"
@@ -28,11 +31,11 @@ sms_ntsc_setup_t sms_setup;
 sms_ntsc_t sms_ntsc;
 
 /*** PAL 50hz flag ***/
-uint8 gc_pal = 0;
+BOOL gc_pal = 0;
 
 /*** VI ***/
-unsigned int *xfb[2];	/*** Double buffered            ***/
-int whichfb = 0;		  /*** External framebuffer index ***/
+unsigned int *xfb[2]; /*** Double buffered            ***/
+int whichfb = 0;      /*** External framebuffer index ***/
 GXRModeObj *vmode;    /*** Menu video mode            ***/
 u8 *texturemem;       /*** Texture Data               ***/
 
@@ -67,23 +70,23 @@ GXRModeObj TV50hz_288p =
   GX_FALSE,        // aa
 
   // sample points arranged in increasing Y order
-	{
-		{6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
-		{6,6},{6,6},{6,6},  // pix 1
-		{6,6},{6,6},{6,6},  // pix 2
-		{6,6},{6,6},{6,6}   // pix 3
-	},
+  {
+    {6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
+    {6,6},{6,6},{6,6},  // pix 1
+    {6,6},{6,6},{6,6},  // pix 2
+    {6,6},{6,6},{6,6}   // pix 3
+  },
 
   // vertical filter[7], 1/64 units, 6 bits each
-	{
-		 0,         // line n-1
-		 0,         // line n-1
-		21,         // line n
-		22,         // line n
-		21,         // line n
-		 0,         // line n+1
-		 0          // line n+1
-	}
+  {
+     0,         // line n-1
+     0,         // line n-1
+    21,         // line n
+    22,         // line n
+    21,         // line n
+     0,         // line n+1
+     0          // line n+1
+  }
 };
 
 /* 576 lines interlaced (PAL 50Hz, scaled) */
@@ -102,23 +105,23 @@ GXRModeObj TV50hz_576i =
   GX_FALSE,        // aa
 
   // sample points arranged in increasing Y order
-	{
-		{6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
-		{6,6},{6,6},{6,6},  // pix 1
-		{6,6},{6,6},{6,6},  // pix 2
-		{6,6},{6,6},{6,6}   // pix 3
-	},
+  {
+    {6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
+    {6,6},{6,6},{6,6},  // pix 1
+    {6,6},{6,6},{6,6},  // pix 2
+    {6,6},{6,6},{6,6}   // pix 3
+  },
 
   // vertical filter[7], 1/64 units, 6 bits each
-	{
-		 8,         // line n-1
-		 8,         // line n-1
-		10,         // line n
-		12,         // line n
-		10,         // line n
-		 8,         // line n+1
-		 8          // line n+1
-	}
+  {
+     8,         // line n-1
+     8,         // line n-1
+    10,         // line n
+    12,         // line n
+    10,         // line n
+     8,         // line n+1
+     8          // line n+1
+  }
 };
 
 /* 240 lines progressive (NTSC or PAL 60Hz) */
@@ -137,23 +140,23 @@ GXRModeObj TV60hz_240p =
   GX_FALSE,        // aa
 
   // sample points arranged in increasing Y order
-	{
-		{6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
-		{6,6},{6,6},{6,6},  // pix 1
-		{6,6},{6,6},{6,6},  // pix 2
-		{6,6},{6,6},{6,6}   // pix 3
-	},
+  {
+    {6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
+    {6,6},{6,6},{6,6},  // pix 1
+    {6,6},{6,6},{6,6},  // pix 2
+    {6,6},{6,6},{6,6}   // pix 3
+  },
 
   // vertical filter[7], 1/64 units, 6 bits each
-	{
-		  0,         // line n-1
-		  0,         // line n-1
-		 21,         // line n
-		 22,         // line n
-		 21,         // line n
-		  0,         // line n+1
-		  0          // line n+1
-	}
+  {
+      0,         // line n-1
+      0,         // line n-1
+     21,         // line n
+     22,         // line n
+     21,         // line n
+      0,         // line n+1
+      0          // line n+1
+  }
 };
 
 /* 480 lines interlaced (NTSC or PAL 60Hz) */
@@ -172,23 +175,23 @@ GXRModeObj TV60hz_480i =
   GX_FALSE,        // aa
 
   // sample points arranged in increasing Y order
-	{
-		{6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
-		{6,6},{6,6},{6,6},  // pix 1
-		{6,6},{6,6},{6,6},  // pix 2
-		{6,6},{6,6},{6,6}   // pix 3
-	},
+  {
+    {6,6},{6,6},{6,6},  // pix 0, 3 sample points, 1/12 units, 4 bits each
+    {6,6},{6,6},{6,6},  // pix 1
+    {6,6},{6,6},{6,6},  // pix 2
+    {6,6},{6,6},{6,6}   // pix 3
+  },
 
   // vertical filter[7], 1/64 units, 6 bits each
-	{
-		 8,         // line n-1
-		 8,         // line n-1
-		10,         // line n
-		12,         // line n
-		10,         // line n
-		 8,         // line n+1
-		 8          // line n+1
-	}
+  {
+     8,         // line n-1
+     8,         // line n-1
+    10,         // line n
+    12,         // line n
+    10,         // line n
+     8,         // line n+1
+     8          // line n+1
+  }
 };
 
 /* TV Modes table */
@@ -206,7 +209,7 @@ typedef struct tagcamera
 
 /*** Square Matrix
      This structure controls the size of the image on the screen.
-	 Think of the output as a -80 x 80 by -60 x 60 graph.
+   Think of the output as a -80 x 80 by -60 x 60 graph.
 ***/
 static s16 square[] ATTRIBUTE_ALIGN (32) =
 {
@@ -214,10 +217,10 @@ static s16 square[] ATTRIBUTE_ALIGN (32) =
    * X,   Y,  Z
    * Values set are for roughly 4:3 aspect
    */
-	-HASPECT,  VASPECT, 0,	// 0
-	 HASPECT,  VASPECT, 0,	// 1
-	 HASPECT, -VASPECT, 0,	// 2
-	-HASPECT, -VASPECT, 0,	// 3
+  -HASPECT,  VASPECT, 0,  // 0
+   HASPECT,  VASPECT, 0,  // 1
+   HASPECT, -VASPECT, 0,  // 2
+  -HASPECT, -VASPECT, 0,  // 3
 };
 
 static camera cam = {
@@ -306,7 +309,7 @@ static void gxStart(void)
   guOrtho(p, vmode->efbHeight/2, -(vmode->efbHeight/2), -(vmode->fbWidth/2), vmode->fbWidth/2, 100, 1000);
   GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
 
-  /*** reset XFB ***/
+  /*** Reset XFB ***/
   GX_CopyDisp (xfb[whichfb ^ 1], GX_TRUE);
 
   /*** Initialize texture data ***/
@@ -322,64 +325,64 @@ static void gxScale(void)
 {
   int xscale, yscale, xshift, yshift;
 
-  	/* Aspect Ratio (depending on current configuration) */
-	if (option.aspect)
-	{
-		/* original aspect */
-		if (option.overscan)
-		{
-			if (sms.console == CONSOLE_GGMS)
-			{
-				/* SMS display scaled into GG screen */
-				xscale = 182;
-				yscale = 72;
-				if (gc_pal && !option.render) yscale = yscale * 288 / 243;
-				xshift = 0;
-				yshift = 0;
-			}
-			else
-			{
-				xscale = 320;
-				yscale = sms.display ? ((gc_pal && !option.render) ? 144 : 121) : ((gc_pal && !option.render) ? 143 : 120);
-				xshift = 0;
-				yshift = sms.display ? (gc_pal ? 1 : 0) : 2;
-			}
-		}
-		else
-		{
-			/* borders are emulated */
-			if ((sms.console == CONSOLE_GGMS) || ((sms.console == CONSOLE_GG) && !option.extra_gg))
-			{
-				/* SMS display scaled into GG screen */
-				xscale = 182;
-				yscale = 72;
-				if (gc_pal && !option.render) yscale = yscale * 288 / 243;
-				xshift = 0;
-				yshift = 0;
-			}
-			else
-			{
-				xscale = 290;
-				yscale = bitmap.viewport.h / 2;
-				if (sms.display && (!gc_pal || option.render)) yscale = yscale * 243 / 288;
+  /* Aspect Ratio (depending on current configuration) */
+  if (option.aspect)
+  {
+    /* original aspect */
+    if (option.overscan)
+    {
+      if (sms.console == CONSOLE_GGMS)
+      {
+        /* SMS display scaled into GG screen */
+        xscale = 182;
+        yscale = 72;
+        if (gc_pal && !option.render) yscale = yscale * 288 / 243;
+        xshift = 0;
+        yshift = 0;
+      }
+      else
+      {
+        xscale = 320;
+        yscale = sms.display ? ((gc_pal && !option.render) ? 144 : 121) : ((gc_pal && !option.render) ? 143 : 120);
+        xshift = 0;
+        yshift = sms.display ? (gc_pal ? 1 : 0) : 2;
+      }
+    }
+    else
+    {
+      /* borders are emulated */
+      if ((sms.console == CONSOLE_GGMS) || ((sms.console == CONSOLE_GG) && !option.extra_gg))
+      {
+        /* SMS display scaled into GG screen */
+        xscale = 182;
+        yscale = 72;
+        if (gc_pal && !option.render) yscale = yscale * 288 / 243;
+        xshift = 0;
+        yshift = 0;
+      }
+      else
+      {
+        xscale = 290;
+        yscale = bitmap.viewport.h / 2;
+        if (sms.display && (!gc_pal || option.render)) yscale = yscale * 243 / 288;
         else if (!sms.display && gc_pal && !option.render) yscale = yscale * 288 / 243;
-				xshift = 0;
-				yshift = sms.display ? (gc_pal ? 1 : 0) : 2;
-			}
-		}
-	}
-	else
-	{
-		/* fit screen */
-		xscale = (option.overscan) ? 320 : 290;
-		yscale = (gc_pal && !option.render) ? 134 : 112;
-		xshift = 0;
-		yshift = gc_pal ? 1 : 2;
-	}
+        xshift = 0;
+        yshift = sms.display ? (gc_pal ? 1 : 0) : 2;
+      }
+    }
+  }
+  else
+  {
+    /* fit screen */
+    xscale = (option.overscan) ? 320 : 290;
+    yscale = (gc_pal && !option.render) ? 134 : 112;
+    xshift = 0;
+    yshift = gc_pal ? 1 : 2;
+  }
 
   /* user configuration */
   if (!option.aspect)
-	{
+  {
     xscale += option.xscale;
     yscale += option.yscale;
   }
@@ -387,22 +390,22 @@ static void gxScale(void)
   xshift += option.xshift;
   yshift += option.yshift;
 
-	/* double resolution */
-	if (option.render)
-	{
-		yscale *= 2;
+  /* double resolution */
+  if (option.render)
+  {
+    yscale *= 2;
     yshift *= 2;
-	}
-	
-  /* update matrix */
+  }
+
+  /* update GX scaler (Vertex Position Matrix) */
   square[6] = square[3]  =  xscale + xshift;
-	square[0] = square[9]  = -xscale + xshift;
-	square[4] = square[1]  =  yscale + yshift;
-	square[7] = square[10] = -yscale + yshift;
+  square[0] = square[9]  = -xscale + xshift;
+  square[4] = square[1]  =  yscale + yshift;
+  square[7] = square[10] = -yscale + yshift;
 
   DCFlushRange (square, 32);
   GX_InvVtxCache ();
-}	
+}
 
 /* Reinitialize Video */
 void ogc_video__reset()
@@ -434,12 +437,14 @@ void ogc_video__reset()
   /* Set current TV mode */  
   rmode = option.render ? tvmodes[gc_pal*2 + 1] : tvmodes[gc_pal*2];
 
-  	/* Configure VI */
-	VIDEO_Configure (rmode);
-	VIDEO_ClearFrameBuffer(rmode, xfb[whichfb], COLOR_BLACK);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
+    /* Configure VI */
+  VIDEO_Configure (rmode);
+  VIDEO_Flush();
   VIDEO_WaitVSync();
+  VIDEO_WaitVSync();
+
+  /* reset frame counter */
+  frameticker = 0;
 
   /* Configure GX */
   GX_SetViewport (0.0F, 0.0F, rmode->fbWidth, rmode->efbHeight, 0.0F, 1.0F);
@@ -479,29 +484,29 @@ void ogc_video__update()
 
   if (bitmap.viewport.changed)
   {
-	  bitmap.viewport.changed = 0;
-	  
+    bitmap.viewport.changed = 0;
+    
     /* update texture size */
-	  if ((sms.console == CONSOLE_GG) && !option.overscan && !option.extra_gg)
-	  {
-		  /* Game Gear display is 160 x 144 pixels */
-		  offset  = 48 * bitmap.granularity;
-		  vwidth  = 160;
-		  vheight = 144;
-	  }
-	  else if ((sms.console == CONSOLE_GGMS) && option.aspect && option.overscan)
-	  {
-		  /* original Game Gear SMS Mode: 256x240 cropped to 240x218 then downscaled to 160x144 */
-		  offset  = (22 * bitmap.granularity) + (10 * bitmap.pitch);
-		  vwidth  = 240;
-		  vheight = 220;  /* value need to be divisible by 4 */
-	  }
-	  else
-	  {
-		  offset  = 0;
-		  vwidth  = bitmap.viewport.w + 2*bitmap.viewport.x;
-		  vheight = bitmap.viewport.h + 2*bitmap.viewport.y;
-	  }
+    if ((sms.console == CONSOLE_GG) && !option.overscan && !option.extra_gg)
+    {
+      /* Game Gear display is 160 x 144 pixels */
+      offset  = 48 * bitmap.granularity;
+      vwidth  = 160;
+      vheight = 144;
+    }
+    else if ((sms.console == CONSOLE_GGMS) && option.aspect && option.overscan)
+    {
+      /* original Game Gear SMS Mode: 256x240 cropped to 240x218 then downscaled to 160x144 */
+      offset  = (22 * bitmap.granularity) + (10 * bitmap.pitch);
+      vwidth  = 240;
+      vheight = 220;  /* value need to be divisible by 4 */
+    }
+    else
+    {
+      offset  = 0;
+      vwidth  = bitmap.viewport.w + 2*bitmap.viewport.x;
+      vheight = bitmap.viewport.h + 2*bitmap.viewport.y;
+    }
 
     /* ntsc filter */
     if (option.ntsc) vwidth = SMS_NTSC_OUT_WIDTH(vwidth);
@@ -514,7 +519,7 @@ void ogc_video__update()
     shift   = (bitmap.width - vwidth) / 4;
 
     /* reinitialize texture */
-	  GX_InitTexObj (&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GX_InitTexObj (&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
     /* enable/disable bilinear filtering */
     if (!option.bilinear)
@@ -532,17 +537,17 @@ void ogc_video__update()
   long long int *src2 = src1 + TEX_PITCH;
   long long int *src3 = src2 + TEX_PITCH;
   long long int *src4 = src3 + TEX_PITCH;
-      
+
   /* update texture data */
   for (h = 0; h < vheight; h += 4)
   {
     for (w = 0; w < (vwidth >> 2); w++ )
-	  {
+    {
       *dst++ = *src1++;
       *dst++ = *src2++;
       *dst++ = *src3++;
       *dst++ = *src4++;
-	  }
+    }
 
     src1 = src4 + shift;
     src2 = src1 + TEX_PITCH;
@@ -553,7 +558,7 @@ void ogc_video__update()
   /* update texture cache */
   DCFlushRange (texturemem, TEX_SIZE);
   GX_InvalidateTexAll ();
-  
+
   /* render textured quad */
   draw_square ();
   GX_DrawDone ();
@@ -584,7 +589,7 @@ void ogc_video__init(void)
    */
   vmode = VIDEO_GetPreferredMode(NULL);
 
-  /* adjust display settings */
+  /* Adjust display settings */
   switch (vmode->viTVMode >> 2)
   {
     case VI_PAL:  /* 576 lines (PAL 50Hz) */
@@ -598,9 +603,8 @@ void ogc_video__init(void)
       vmode->xfbHeight = 480;
       vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
       vmode->viHeight = 480;
-
       break;
-    
+
     case VI_NTSC: /* 480 lines (NTSC 60hz) */
       TV60hz_240p.viTVMode = VI_TVMODE_NTSC_DS;
       TV60hz_480i.viTVMode = VI_TVMODE_NTSC_INT;
@@ -619,7 +623,16 @@ void ogc_video__init(void)
       break;
   }
    
-  /* configure video mode */
+#ifdef HW_RVL
+  /* Widescreen fix */
+  if( CONF_GetAspectRatio() )
+  {
+    vmode->viWidth    = 678;
+    vmode->viXOrigin  = (VI_MAX_WIDTH_NTSC - 678)/2;
+  }
+#endif
+
+  /* Configure video mode */
   VIDEO_Configure (vmode);
 
   /* Configure the framebuffers (double-buffering) */
@@ -641,7 +654,7 @@ void ogc_video__init(void)
 
   /* Enable Video Interface */
   VIDEO_SetBlack (FALSE);
-  
+
   /* Update video settings for next VBlank */
   VIDEO_Flush ();
 
@@ -649,7 +662,7 @@ void ogc_video__init(void)
   VIDEO_WaitVSync();
   VIDEO_WaitVSync();
 
-  /* initialize GUI */
+  /* Initialize GUI */
   unpackBackdrop ();
   init_font();
 

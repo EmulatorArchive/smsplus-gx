@@ -18,9 +18,9 @@ include $(DEVKITPPC)/gamecube_rules
 TARGET		:=	smsplus_cube
 BUILD		:=	build_cube
 SOURCES		:=	source source/cpu source/sound source/ntsc \
-			source/ngc source/ngc/gui
+			source/ngc source/ngc/gui source/ngc/fileio
 INCLUDES	:=	source source/cpu source/sound source/ntsc \
-			source/ngc source/ngc/gui
+			source/ngc source/ngc/gui source/ngc/fileio
 
 #---------------------------------------------------------------------------------
 # options for code generation

@@ -48,7 +48,7 @@ void vdp_init(void)
   if (option.overscan)
   {
     bitmap.viewport.x += 14;
-	}
+  }
 
   /* reset viewport */
   viewport_check();
@@ -59,29 +59,29 @@ void vdp_shutdown(void)
 {
 }
 
-	
+  
 /* Reset VDP emulation */
 void vdp_reset(void)
 {
   /* reset VDP structure */
-	memset(&vdp, 0, sizeof(vdp_t));
+  memset(&vdp, 0, sizeof(vdp_t));
 
   /* reset VDP registers (normally set by BIOS) */
-	if (bios.enabled != 3)
-	{
-		vdp.reg[0] = 0x36; 
-		vdp.reg[1] = 0x80; 
-		vdp.reg[2] = 0xFF;
-		vdp.reg[3] = 0xFF;
-		vdp.reg[4] = 0xFF;
-		vdp.reg[5] = 0xFF;
-		vdp.reg[6] = 0xFB;
-		vdp.reg[10] = 0xFF;
-	}
+  if (bios.enabled != 3)
+  {
+    vdp.reg[0] = 0x36; 
+    vdp.reg[1] = 0x80; 
+    vdp.reg[2] = 0xFF;
+    vdp.reg[3] = 0xFF;
+    vdp.reg[4] = 0xFF;
+    vdp.reg[5] = 0xFF;
+    vdp.reg[6] = 0xFB;
+    vdp.reg[10] = 0xFF;
+  }
 
   /* reset viewport */
-	viewport_check();
-	bitmap.viewport.changed = 1;
+  viewport_check();
+  bitmap.viewport.changed = 1;
 }
 
 
@@ -93,71 +93,71 @@ void viewport_check(void)
   int m2 = (vdp.reg[0] >> 1) & 1;
   int m4 = (vdp.reg[0] >> 2) & 1;
 
-	vdp.mode = (m4 << 3 | m3 << 2 | m2 << 1 | m1 << 0);
+  vdp.mode = (m4 << 3 | m3 << 2 | m2 << 1 | m1 << 0);
 
-	/* Check for extended modes */
-	if (IS_GG || (sms.console == CONSOLE_SMS2))
-	{
-		switch (vdp.mode)
+  /* Check for extended modes */
+  if (IS_GG || (sms.console == CONSOLE_SMS2))
+  {
+    switch (vdp.mode)
     {
-			case 0x0B:	/* Mode 4 extended (224 lines) */
-				vdp.height = 224;
+      case 0x0B:  /* Mode 4 extended (224 lines) */
+        vdp.height = 224;
         vdp.extended = 1;
-				vdp.ntab = ((vdp.reg[2] << 10) & 0x3000) | 0x0700;
+        vdp.ntab = ((vdp.reg[2] << 10) & 0x3000) | 0x0700;
         break;
 
-			case 0x0E:	/* Mode 4 extended (240 lines) */
+      case 0x0E:  /* Mode 4 extended (240 lines) */
         vdp.height = 240;
         vdp.extended = 2;
         vdp.ntab = ((vdp.reg[2] << 10) & 0x3000) | 0x0700;
         break;
 
-			default:	/* Mode 4 (192 lines) */
-				vdp.height = 192;
-				vdp.extended = 0;
-				vdp.ntab = (vdp.reg[2] << 10) & 0x3800;
+      default:  /* Mode 4 (192 lines) */
+        vdp.height = 192;
+        vdp.extended = 0;
+        vdp.ntab = (vdp.reg[2] << 10) & 0x3800;
 
-				/* invalid text mode (Mode 4) */
-				if ((vdp.mode & 0x0B) == 0x09) vdp.mode = 1;
+        /* invalid text mode (Mode 4) */
+        if ((vdp.mode & 0x0B) == 0x09) vdp.mode = 1;
         break;
     }
   }
   else
   {
-		/* always use Mode 4 (192 lines) */
+    /* always use Mode 4 (192 lines) */
     vdp.height = 192;
     vdp.extended = 0;
-		vdp.ntab = (vdp.reg[2] << 10) & 0x3800;
+    vdp.ntab = (vdp.reg[2] << 10) & 0x3800;
 
-		/* invalid text mode (Mode 4) */
+    /* invalid text mode (Mode 4) */
     if ((vdp.mode & 0x09) == 0x09) vdp.mode = 1;
-	}
+  }
 
-	/* update display area */
-	if ((sms.console != CONSOLE_GG) || option.extra_gg)
-	{
-		if(bitmap.viewport.h != vdp.height)
+  /* update display area */
+  if ((sms.console != CONSOLE_GG) || option.extra_gg)
+  {
+    if(bitmap.viewport.h != vdp.height)
     {
       bitmap.viewport.oh = bitmap.viewport.h;
-			bitmap.viewport.h = vdp.height;
+      bitmap.viewport.h = vdp.height;
       bitmap.viewport.changed = 1;
     }
-	}
-	else
+  }
+  else
   {
     /* GG display area is fixed */
     bitmap.viewport.h = 144;
   }
 
-	/* update border area */
+  /* update border area */
   bitmap.viewport.y = 0;
-	if (option.overscan)
+  if (option.overscan)
   {
     int max = sms.display ? 288 : 240;
     bitmap.viewport.y = (max - bitmap.viewport.h) / 2;
   }
 
-	/* check if this is switching in/out of tms */
+  /* check if this is switching in/out of tms */
   if (IS_SMS)
   {
     if(vdp.mode & 8)
@@ -199,7 +199,7 @@ void viewport_check(void)
   vdp.sa = (vdp.reg[5] <<  7) & 0x3F80;
   vdp.sg = (vdp.reg[6] << 11) & 0x3800;
 
-	render_bg  = (vdp.mode & 8) ? render_bg_sms  : render_bg_tms;
+  render_bg  = (vdp.mode & 8) ? render_bg_sms  : render_bg_tms;
   render_obj = (vdp.mode & 8) ? render_obj_sms : render_obj_tms;
 }
 
@@ -278,7 +278,7 @@ void vdp_write(int offset, uint8 data)
             vdp.vram[index] = data;
             MARK_BG_DIRTY(vdp.addr);
           }
-					vdp.buffer = data;
+          vdp.buffer = data;
           break;
     
         case 3: /* CRAM write */

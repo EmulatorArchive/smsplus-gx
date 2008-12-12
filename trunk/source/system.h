@@ -19,7 +19,7 @@
 #define INPUT_BUTTON2       0x00000020
 
 /* These can be used for 'input.system' */
-#define INPUT_START         0x00000001  /* Game Gear only */    
+#define INPUT_START         0x00000001  /* Game Gear only */
 #define INPUT_PAUSE         0x00000002  /* Master System only */
 #define INPUT_RESET         0x00000004  /* Master System only */
 
@@ -41,8 +41,8 @@ typedef struct
 typedef struct
 {
   uint8 *rom;
-	uint8 loaded;
-	uint32 size;
+  uint8 loaded;
+  uint32 size;
   uint8 pages;
   uint32 crc;
   uint32 sram_crc;
@@ -77,7 +77,7 @@ typedef struct
 
 /* Global variables */
 extern bitmap_t bitmap;   /* Display bitmap */
-extern cart_t cart;     /* Game cartridge data */
+extern cart_t cart;       /* Game cartridge data */
 extern input_t input;     /* Controller input */
 
 /* Function prototypes */

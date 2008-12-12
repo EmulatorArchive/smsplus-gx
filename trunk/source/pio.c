@@ -14,16 +14,16 @@ io_state *io_current;
   
   Port $3F: I/O port control
 
-  Bit	Function
+  Bit  Function
   ------------
-  7	Port B TH pin output level (1=high, 0=low)
-  6	Port B TR pin output level (1=high, 0=low)
-  5	Port A TH pin output level (1=high, 0=low)
-  4	Port A TR pin output level (1=high, 0=low)
-  3	Port B TH pin direction (1=input, 0=output)
-  2	Port B TR pin direction (1=input, 0=output)
-  1	Port A TH pin direction (1=input, 0=output)
-  0	Port A TR pin direction (1=input, 0=output)
+  7  Port B TH pin output level (1=high, 0=low)
+  6  Port B TR pin output level (1=high, 0=low)
+  5  Port A TH pin output level (1=high, 0=low)
+  4  Port A TR pin output level (1=high, 0=low)
+  3  Port B TH pin direction (1=input, 0=output)
+  2  Port B TR pin direction (1=input, 0=output)
+  1  Port A TH pin direction (1=input, 0=output)
+  0  Port A TR pin direction (1=input, 0=output)
 
   This port is used to control the two input/output lines available on each controller port (referred to as ports A and B).
   Some control hardware needs to recieve input from the CPU to perform its task, and uses one or more of these lines.
@@ -94,25 +94,25 @@ void pio_shutdown(void)
 /* I/O port control */
 void pio_ctrl_w(uint8 data)
 {
-	uint8 th_level[2];
+  uint8 th_level[2];
 
-	/* save old TH values */
-	th_level[0] = io_current->th_level[0];
-	th_level[1] = io_current->th_level[1];
-	
-	/* HCounter is latched on TH Low->High transition */
+  /* save old TH values */
+  th_level[0] = io_current->th_level[0];
+  th_level[1] = io_current->th_level[1];
+  
+  /* HCounter is latched on TH Low->High transition */
   io_current = &io_lut[sms.territory][data];
   if (((io_current->th_dir[0]   == PIN_DIR_IN) &&
-      (io_current->th_level[0] == PIN_LVL_HI) &&
-      (th_level[0] == PIN_LVL_LO)
-     ) ||
-     ((io_current->th_dir[1]   == PIN_DIR_IN) &&
+       (io_current->th_level[0] == PIN_LVL_HI) &&
+       (th_level[0] == PIN_LVL_LO)
+      ) ||
+      ((io_current->th_dir[1]   == PIN_DIR_IN) &&
       (io_current->th_level[1] == PIN_LVL_HI) &&
       (th_level[1] == PIN_LVL_LO)
-     )) 
-	{
-		sms.hlatch = hc_256[z80_get_elapsed_cycles() % CYCLES_PER_LINE];
-	}
+      ))
+  {
+    sms.hlatch = hc_256[z80_get_elapsed_cycles() % CYCLES_PER_LINE];
+  }
 
   /* update port value */
   sms.ioctrl = data;
@@ -121,16 +121,16 @@ void pio_ctrl_w(uint8 data)
 /*
    Return peripheral ports Pin value for various devices:
 
-  Bit	Function
+  Bit  Function
   ------------
-  7	 Unused
-  6	 TH pin input
-  5	 TR pin input
-  4	 TL pin input
-  3	 Right pin input
-  2	 Left pin input
-  1	 Down pin input
-  0	 Up pin input
+  7   Unused
+  6   TH pin input
+  5   TR pin input
+  4   TL pin input
+  3   Right pin input
+  2   Left pin input
+  1   Down pin input
+  0   Up pin input
 */
 
 static uint8 paddle_toggle[2] = {0,0};
@@ -144,7 +144,7 @@ static uint8 device_r(int port)
   {
     case DEVICE_NONE:
       break;
-    
+
     case DEVICE_PAD2B:
       if(input.pad[port] & INPUT_UP)    temp &= ~0x01;
       if(input.pad[port] & INPUT_DOWN)  temp &= ~0x02;
@@ -153,7 +153,7 @@ static uint8 device_r(int port)
       if(input.pad[port] & INPUT_BUTTON1) temp &= ~0x10;  /* TL */
       if(input.pad[port] & INPUT_BUTTON2) temp &= ~0x20;  /* TR */
       break;
-    
+
     /* PADDLE emulation
       based on the documentation from smspower.org
       http://www.smspower.org/dev/docs/wiki/InputAndOutput/Paddle
@@ -209,7 +209,7 @@ static uint8 device_r(int port)
         int hc = hc_256[z80_get_elapsed_cycles() % CYCLES_PER_LINE];
         int dx = input.analog[port][0] - (hc*2);
         int dy = input.analog[port][1] - vdp.line;
-      
+
         /* is current pixel is within lightgun spot ? */
         if ((abs(dy) <= 5) && (abs(dx) <= 60))
         {
@@ -241,7 +241,7 @@ static uint8 device_r(int port)
 
 
 uint8 pio_port_r(int offset)
-{			
+{
   uint8 temp = 0xFF;
 
   /* 
@@ -255,16 +255,16 @@ uint8 pio_port_r(int offset)
     /*
       Port $DC & mirrors: I/O port A and B
 
-      Bit	Function:
+      Bit  Function:
       ------------
-      7	Port B Down pin input
-      6	Port B Up pin input
-      5	Port A TR pin input
-      4	Port A TL pin input
-      3	Port A Right pin input
-      2	Port A Left pin input
-      1	Port A Down pin input
-      0	Port A Up pin input
+      7  Port B Down pin input
+      6  Port B Up pin input
+      5  Port A TR pin input
+      4  Port A TL pin input
+      3  Port A Right pin input
+      2  Port A Left pin input
+      1  Port A Down pin input
+      0  Port A Up pin input
 
     */
     case 0:
@@ -288,16 +288,16 @@ uint8 pio_port_r(int offset)
     /*
       Port $DD & mirrors: I/O port B and miscellaneous
 
-      Bit	Function:
+      Bit  Function:
       ------------
-      7	Port B TH pin input
-      6	Port A TH pin input
-      5	Cartridge slot CONT pin *
-      4	Reset button (1= not pressed, 0= pressed) *
-      3	Port B TR pin input
-      2	Port B TL pin input
-      1	Port B Right pin input
-      0	Port B Left pin input
+      7  Port B TH pin input
+      6  Port A TH pin input
+      5  Cartridge slot CONT pin *
+      4  Reset button (1= not pressed, 0= pressed) *
+      3  Port B TR pin input
+      2  Port B TL pin input
+      1  Port B Right pin input
+      0  Port B Left pin input
 
       These map to hardware which does not exist on some systems (eg. SMS2 has neither).
       Reset always returns 1 when hardware is not present;
@@ -348,8 +348,8 @@ uint8 pio_port_r(int offset)
       if(IS_MD) temp &= ~0x20;
 
       break;
-	}
-	return temp;
+  }
+  return temp;
 }
 
 /* Game Gear specific IO ports */
@@ -423,7 +423,7 @@ void sio_w(int offset, int data)
     case 5: /* Serial control */
       sms.sio.sctrl = data & 0xF8;
       return;
-    
+
     case 6: /* Stereo output control */
       psg_stereo_w(data);
       return;

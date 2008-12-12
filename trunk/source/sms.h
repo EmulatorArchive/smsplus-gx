@@ -31,7 +31,7 @@ enum {
 enum {
   CLOCK_NTSC      = 3579545,
   CLOCK_PAL       = 3546895,
-	CLOCK_NTSC_SMS1 = 3579527
+  CLOCK_NTSC_SMS1 = 3579527
 };
 
 enum {
@@ -78,8 +78,8 @@ typedef struct
   struct {
     uint8 pdr;    /* Parallel data register */
     uint8 ddr;    /* Data direction register */
-    uint8 txdata;   /* Transmit data buffer */
-    uint8 rxdata;   /* Receive data buffer */
+    uint8 txdata; /* Transmit data buffer */
+    uint8 rxdata; /* Receive data buffer */
     uint8 sctrl;  /* Serial mode control and status */
   } sio;
   uint8 device[2];
@@ -89,18 +89,18 @@ typedef struct
 /* BIOS ROM */
 typedef struct
 {
-	uint8 *rom;
-	uint8 enabled;
-	uint8 pages;
-	uint8 fcr[4];
+  uint8 *rom;
+  uint8 enabled;
+  uint8 pages;
+  uint8 fcr[4];
 } bios_t;
 
 typedef struct
 {
-	uint8 *rom;
-	uint8 pages;
-	uint8 *fcr;
-	uint8 mapper;
+  uint8 *rom;
+  uint8 pages;
+  uint8 *fcr;
+  uint8 mapper;
 } slot_t;
 
 /* Global data */

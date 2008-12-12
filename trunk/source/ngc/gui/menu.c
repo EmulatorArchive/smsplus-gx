@@ -1,6 +1,9 @@
-/******************************************************************************
- *  Sega Master System / GameGear Emulator
- *  Copyright (C) 1998-2007  Charles MacDonald
+/****************************************************************************
+ *  menu.c
+ *
+ *  SMS Plus GX menu
+ *
+ *  code by Softdev (March 2006), Eke-Eke (2007,2008)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,13 +19,13 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Nintendo Gamecube Menus
- * Please put any user menus here! - softdev March 12 2006
  ***************************************************************************/
+
 #include "shared.h"
 #include "dvd.h"
-#include "config.h"
 #include "font.h"
+#include "file_dvd.h"
+#include "file_fat.h"
 
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
@@ -51,8 +54,8 @@ void drawmenu (char items[][25], int maxitems, int selected)
 
   for (i = 0; i < maxitems; i++)
   {
-      if (i == selected) WriteCentre_HL (i * fheight + ypos, (char *) items[i]);
-      else WriteCentre (i * fheight + ypos, (char *) items[i]);
+    if (i == selected) WriteCentre_HL (i * fheight + ypos, (char *) items[i]);
+    else WriteCentre (i * fheight + ypos, (char *) items[i]);
   }
 
   SetScreen ();
@@ -143,83 +146,83 @@ void palmenu ()
 
   while (quit == 0)
   {
-	  int8 val;
+    int8 val;
 
-	  sprintf (miscmenu[0], "R,G (1/3) = %d", (sms_cram_expand_table[1] >> 3) & 0x1F);
-	  sprintf (miscmenu[1], "B   (1/3) = %d", (sms_cram_expand_table[1] >> 2) & 0x3F);
-	  sprintf (miscmenu[2], "R,G (2/3) = %d", (sms_cram_expand_table[2] >> 3) & 0x1F);
-	  sprintf (miscmenu[3], "B   (2/3) = %d", (sms_cram_expand_table[2] >> 2) & 0x3F);
-	  sprintf (miscmenu[4], "R,G (3/3) = %d", (sms_cram_expand_table[3] >> 3) & 0x1F);
-	  sprintf (miscmenu[5], "B   (3/3) = %d", (sms_cram_expand_table[3] >> 2) & 0x3F);
+    sprintf (miscmenu[0], "R,G (1/3) = %d", (sms_cram_expand_table[1] >> 3) & 0x1F);
+    sprintf (miscmenu[1], "B   (1/3) = %d", (sms_cram_expand_table[1] >> 2) & 0x3F);
+    sprintf (miscmenu[2], "R,G (2/3) = %d", (sms_cram_expand_table[2] >> 3) & 0x1F);
+    sprintf (miscmenu[3], "B   (2/3) = %d", (sms_cram_expand_table[2] >> 2) & 0x3F);
+    sprintf (miscmenu[4], "R,G (3/3) = %d", (sms_cram_expand_table[3] >> 3) & 0x1F);
+    sprintf (miscmenu[5], "B   (3/3) = %d", (sms_cram_expand_table[3] >> 2) & 0x3F);
 
-	  ret = domenu (&miscmenu[0], misccount);
+    ret = domenu (&miscmenu[0], misccount);
 
-	  switch (ret)
-	  {
-		case 0:
-		case -2:
-			val = (sms_cram_expand_table[1] >> 3) & 0x1F;
-			if (ret < 0) val --;
-			else val ++;
-			if (val < 0) val = 31;
-			if (val > 31) val = 0;
-			sms_cram_expand_table[1] = val << 3;
-			break;
+    switch (ret)
+    {
+    case 0:
+    case -2:
+      val = (sms_cram_expand_table[1] >> 3) & 0x1F;
+      if (ret < 0) val --;
+      else val ++;
+      if (val < 0) val = 31;
+      if (val > 31) val = 0;
+      sms_cram_expand_table[1] = val << 3;
+      break;
 
-		case 1:
-		case -3:
-			val = (sms_cram_expand_table[1] >> 2) & 0x3F;
-			if (ret < 0) val --;
-			else val ++;
-			if (val < 0) val = 63;
-			if (val > 63) val = 0;
-			sms_cram_expand_table[1] = val << 2;
-			break;
+    case 1:
+    case -3:
+      val = (sms_cram_expand_table[1] >> 2) & 0x3F;
+      if (ret < 0) val --;
+      else val ++;
+      if (val < 0) val = 63;
+      if (val > 63) val = 0;
+      sms_cram_expand_table[1] = val << 2;
+      break;
 
-		case 2:
-		case -4:
-			val = (sms_cram_expand_table[2] >> 3) & 0x1F;
-			if (ret < 0) val --;
-			else val ++;
-			if (val < 0) val = 31;
-			if (val > 31) val = 0;
-			sms_cram_expand_table[2] = val << 3;
-			break;
+    case 2:
+    case -4:
+      val = (sms_cram_expand_table[2] >> 3) & 0x1F;
+      if (ret < 0) val --;
+      else val ++;
+      if (val < 0) val = 31;
+      if (val > 31) val = 0;
+      sms_cram_expand_table[2] = val << 3;
+      break;
 
-		case 3:
-		case -5:
-			val = (sms_cram_expand_table[2] >> 2) & 0x3F;
-			if (ret < 0) val --;
-			else val ++;
-			if (val < 0) val = 63;
-			if (val > 63) val = 0;
-			sms_cram_expand_table[2] = val << 2;
-			break;
+    case 3:
+    case -5:
+      val = (sms_cram_expand_table[2] >> 2) & 0x3F;
+      if (ret < 0) val --;
+      else val ++;
+      if (val < 0) val = 63;
+      if (val > 63) val = 0;
+      sms_cram_expand_table[2] = val << 2;
+      break;
 
-		case 4:
-		case -6:
-			val = (sms_cram_expand_table[3] >> 3) & 0x1F;
-			if (ret < 0) val --;
-			else val ++;
-			if (val < 0) val = 31;
-			if (val > 31) val = 0;
-			sms_cram_expand_table[3] = val << 3;
-			break;
+    case 4:
+    case -6:
+      val = (sms_cram_expand_table[3] >> 3) & 0x1F;
+      if (ret < 0) val --;
+      else val ++;
+      if (val < 0) val = 31;
+      if (val > 31) val = 0;
+      sms_cram_expand_table[3] = val << 3;
+      break;
 
-		case 5:
-		case -7:
-			val = (sms_cram_expand_table[3] >> 2) & 0x3F;
-			if (ret < 0) val --;
-			else val ++;
-			if (val < 0) val = 63;
-			if (val > 63) val = 0;
-			sms_cram_expand_table[3] = val << 2;
-			break;
-		
-		case -1:
-			quit = 1;
-			break;
-	  }
+    case 5:
+    case -7:
+      val = (sms_cram_expand_table[3] >> 2) & 0x3F;
+      if (ret < 0) val --;
+      else val ++;
+      if (val < 0) val = 63;
+      if (val > 63) val = 0;
+      sms_cram_expand_table[3] = val << 2;
+      break;
+
+    case -1:
+      quit = 1;
+      break;
+    }
   }
 
   menu = prevmenu;
@@ -236,54 +239,54 @@ void palmenu ()
 
 void dispmenu ()
 {
-	s8 ret;
-	u8 quit = 0;
-	u8 count = option.aspect ? 9 : 11;
-	u8 prevmenu = menu;
+  s8 ret;
+  u8 quit = 0;
+  u8 count = option.aspect ? 9 : 11;
+  u8 prevmenu = menu;
   int i;
-	menu = 0;
+  menu = 0;
 
-	char items[11][25];
+  char items[11][25];
 
-	while (quit == 0)
-	{
+  while (quit == 0)
+  {
     strcpy (menutitle, option.aspect ? "Press B to return":"");
     sprintf (items[0], "Aspect: %s", option.aspect ? "ORIGINAL" : "STRETCHED");
-		if (option.render == 1) sprintf (items[1], "Render: INTERLACED");
-		else if (option.render == 2) sprintf (items[1], "Render: PROGRESSIVE");
-		else sprintf (items[1], "Render: ORIGINAL");
-		if (option.tv_mode == 0) sprintf (items[2], "TV Mode: 60HZ");
-		else if (option.tv_mode == 1) sprintf (items[2], "TV Mode: 50HZ");
-		else sprintf (items[2], "TV Mode: 50/60HZ");
+    if (option.render == 1) sprintf (items[1], "Render: INTERLACED");
+    else if (option.render == 2) sprintf (items[1], "Render: PROGRESSIVE");
+    else sprintf (items[1], "Render: ORIGINAL");
+    if (option.tv_mode == 0) sprintf (items[2], "TV Mode: 60HZ");
+    else if (option.tv_mode == 1) sprintf (items[2], "TV Mode: 50HZ");
+    else sprintf (items[2], "TV Mode: 50/60HZ");
     sprintf (items[3], "Bilinear Filter: %s", option.bilinear ? " ON" : "OFF");
     if (option.ntsc == 1) sprintf (items[4], "NTSC Filter: COMPOSITE");
-		else if (option.ntsc == 2) sprintf (items[4], "NTSC Filter: S-VIDEO");
-		else if (option.ntsc == 3) sprintf (items[4], "NTSC Filter: RGB");
-		else sprintf (items[4], "NTSC Filter: OFF");
-		sprintf (items[5], "Borders: %s", option.overscan ? " ON" : "OFF");
-		if (option.palette == 0) sprintf (items[6], "Palette: ORIGINAL");
-		else if (option.palette == 1) sprintf (items[6], "Palette:  NORMAL");
-		else if (option.palette == 2) sprintf (items[6], "Palette:  BRIGHT");
-		sprintf (items[7], "Center X: %s%02d",option. xshift < 0 ? "-":"+", abs(option.xshift));
-		sprintf (items[8], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
-		sprintf (items[9], "Scale  X:  %02d", option.xscale);
-		sprintf (items[10], "Scale  Y:  %02d", option.yscale);
+    else if (option.ntsc == 2) sprintf (items[4], "NTSC Filter: S-VIDEO");
+    else if (option.ntsc == 3) sprintf (items[4], "NTSC Filter: RGB");
+    else sprintf (items[4], "NTSC Filter: OFF");
+    sprintf (items[5], "Borders: %s", option.overscan ? " ON" : "OFF");
+    if (option.palette == 0) sprintf (items[6], "Palette: ORIGINAL");
+    else if (option.palette == 1) sprintf (items[6], "Palette:  NORMAL");
+    else if (option.palette == 2) sprintf (items[6], "Palette:  BRIGHT");
+    sprintf (items[7], "Center X: %s%02d",option. xshift < 0 ? "-":"+", abs(option.xshift));
+    sprintf (items[8], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
+    sprintf (items[9], "Scale  X:  %02d", option.xscale);
+    sprintf (items[10], "Scale  Y:  %02d", option.yscale);
 
-		ret = domenu (&items[0], count, 1);
+    ret = domenu (&items[0], count, 1);
 
-		switch (ret)
-		{
-			case 0: /*** config.aspect ratio ***/
-				option.aspect ^= 1;
+    switch (ret)
+    {
+      case 0: /*** config.aspect ratio ***/
+        option.aspect ^= 1;
         count = option.aspect ? 9 : 11;
-				break;
+        break;
 
-			case 1: /*** rendering ***/
-				option.render = (option.render + 1) % 3;
-				if (option.render == 2)
-				{
-					if (VIDEO_HaveComponentCable())
-					{
+      case 1: /*** rendering ***/
+        option.render = (option.render + 1) % 3;
+        if (option.render == 2)
+        {
+          if (VIDEO_HaveComponentCable())
+          {
             /* progressive mode (60hz only) */
             option.tv_mode = 0;
           }
@@ -292,83 +295,83 @@ void dispmenu ()
             /* do nothing if component cable is not detected */
             option.render = 0;
           }
-				}
-				bitmap.viewport.changed = 1;
-				break;
+        }
+        bitmap.viewport.changed = 1;
+        break;
 
-			case 2: /*** tv mode ***/
-				if (option.render == 2) break; /* 60hz progressive only */
-				option.tv_mode = (option.tv_mode + 1) % 3;
-				break;
-		
-			case 3: /*** bilinear filtering ***/
-				option.bilinear ^= 1;
-				bitmap.viewport.changed = 1;
-				break;
+      case 2: /*** tv mode ***/
+        if (option.render == 2) break; /* 60hz progressive only */
+        option.tv_mode = (option.tv_mode + 1) % 3;
+        break;
+    
+      case 3: /*** bilinear filtering ***/
+        option.bilinear ^= 1;
+        bitmap.viewport.changed = 1;
+        break;
 
       case 4: /*** NTSC filter ***/
-				option.ntsc ++;
+        option.ntsc ++;
         if (option.ntsc > 3) option.ntsc = 0;
-				bitmap.viewport.changed = 1;
-				break;
-				
-			case 5: /*** overscan emulation ***/
+        bitmap.viewport.changed = 1;
+        break;
+        
+      case 5: /*** overscan emulation ***/
         option.overscan ^= 1;
         vdp_init();
-				break;
+        break;
 
-			case 6:
-				option.palette = (option.palette + 1) % 3;
-				if (option.palette == 0)
-				{
-					sms_cram_expand_table[1] = (4 << 3)  + (1 << 2);
-					sms_cram_expand_table[2] = (12 << 3) + (1 << 2);
-					sms_cram_expand_table[3] = (22 << 3) + (1 << 2);
-				}
-				else if (option.palette == 1)
-				{
-					sms_cram_expand_table[1] = (5 << 3)  + (1 << 2);
-					sms_cram_expand_table[2] = (15 << 3) + (1 << 2);
-					sms_cram_expand_table[3] = (27 << 3) + (1 << 2);
-				}
-				else if (option.palette == 2)
-				{
-					sms_cram_expand_table[1] = (6 << 3)  + (1 << 2);
-					sms_cram_expand_table[2] = (18 << 3) + (1 << 2);
-					sms_cram_expand_table[3] = (31 << 3) + (1 << 2);
-				}
+      case 6:
+        option.palette = (option.palette + 1) % 3;
+        if (option.palette == 0)
+        {
+          sms_cram_expand_table[1] = (4 << 3)  + (1 << 2);
+          sms_cram_expand_table[2] = (12 << 3) + (1 << 2);
+          sms_cram_expand_table[3] = (22 << 3) + (1 << 2);
+        }
+        else if (option.palette == 1)
+        {
+          sms_cram_expand_table[1] = (5 << 3)  + (1 << 2);
+          sms_cram_expand_table[2] = (15 << 3) + (1 << 2);
+          sms_cram_expand_table[3] = (27 << 3) + (1 << 2);
+        }
+        else if (option.palette == 2)
+        {
+          sms_cram_expand_table[1] = (6 << 3)  + (1 << 2);
+          sms_cram_expand_table[2] = (18 << 3) + (1 << 2);
+          sms_cram_expand_table[3] = (31 << 3) + (1 << 2);
+        }
 
-				for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i, 1);
-				break;
+        for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i, 1);
+        break;
 
-      case 7:	/*** Center X ***/
-			case -9:
-				if (ret<0) option.xshift --;
-				else option.xshift ++;
-				break;
+      case 7:  /*** Center X ***/
+      case -9:
+        if (ret<0) option.xshift --;
+        else option.xshift ++;
+        break;
 
-			case 8:	/*** Center Y ***/
-			case -10:
-				if (ret<0) option.yshift --;
-				else option.yshift ++;
-				break;
-			
-			case 9:	/*** Scale X ***/
-			case -11:
-				if (ret<0) option.xscale --;
-				else option.xscale ++;
-				break;
+      case 8:  /*** Center Y ***/
+      case -10:
+        if (ret<0) option.yshift --;
+        else option.yshift ++;
+        break;
+      
+      case 9:  /*** Scale X ***/
+      case -11:
+        if (ret<0) option.xscale --;
+        else option.xscale ++;
+        break;
 
-			case 10:	/*** Scale Y ***/
-			case -12:
-				if (ret<0) option.yscale --;
-				else option.yscale ++;
-				break;
+      case 10:  /*** Scale Y ***/
+      case -12:
+        if (ret<0) option.yscale --;
+        else option.yscale ++;
+        break;
 
-		case -1:
-			quit = 1;
-			break;
-	  }
+    case -1:
+      quit = 1;
+      break;
+    }
   }
   menu = prevmenu;
 }
@@ -418,19 +421,19 @@ void sysmenu ()
     else sprintf (miscmenu[2], "Console -   AUTO");
         
     sprintf (miscmenu[3], "Sprite Limit: %s", option.spritelimit ? " ON" : "OFF");
-	  sprintf (miscmenu[4], "Use BIOS: %s", option.use_bios ? " ON" : "OFF");
-		sprintf (miscmenu[5], "GG Extra: %s", option.extra_gg ? " ON" : "OFF");
+    sprintf (miscmenu[4], "Use BIOS: %s", option.use_bios ? " ON" : "OFF");
+    sprintf (miscmenu[5], "GG Extra: %s", option.extra_gg ? " ON" : "OFF");
 
-		if (option.autofreeze == 0) sprintf (miscmenu[6], "Auto FREEZE: SDCARD");
-		else if (option.autofreeze == 1) sprintf (miscmenu[6], "Auto FREEZE: MCARD A");
-		else if (option.autofreeze == 2) sprintf (miscmenu[6], "Auto FREEZE: MCARD B");
-		else sprintf (miscmenu[6], "Auto FREEZE: OFF");
+    if (option.autofreeze == 0) sprintf (miscmenu[6], "Auto FREEZE: FAT");
+    else if (option.autofreeze == 1) sprintf (miscmenu[6], "Auto FREEZE: MCARD A");
+    else if (option.autofreeze == 2) sprintf (miscmenu[6], "Auto FREEZE: MCARD B");
+    else sprintf (miscmenu[6], "Auto FREEZE: OFF");
 
-	  ret = domenu (&miscmenu[0], count, 0);
+    ret = domenu (&miscmenu[0], count, 0);
 
-	  switch (ret)
-	  {
-      case 0:	/*** FM Enabled ***/
+    switch (ret)
+    {
+      case 0:  /*** FM Enabled ***/
         fm_type ++;
         if (fm_type > 2) fm_type = 0;
         if (fm_type == 0)
@@ -464,9 +467,9 @@ void sysmenu ()
         system_init();
         break;
 
-		  case 3: /*** sprite flickering ***/
-				option.spritelimit ^= 1;
-				break;
+      case 3: /*** sprite flickering ***/
+        option.spritelimit ^= 1;
+        break;
 
       case 4: /*** SMS BIOS ***/
         option.use_bios ^= 1;
@@ -478,12 +481,12 @@ void sysmenu ()
         if ((bios.enabled == 3) || smsromsize) system_poweron();
         break;
 
-		  case 5: /*** GG Extra mode ***/
-				option.extra_gg ^= 1;
+      case 5: /*** GG Extra mode ***/
+        option.extra_gg ^= 1;
         system_init();
-				break;
+        break;
 
-      case 6:	/*** FreezeState autoload/autosave ***/
+      case 6:  /*** FreezeState autoload/autosave ***/
         option.autofreeze ++;
         if (option.autofreeze > 2) option.autofreeze = -1;
         break;
@@ -491,7 +494,7 @@ void sysmenu ()
     case -1:
         quit = 1;
         break;
-	  }
+    }
   }
 
   menu = prevmenu;
@@ -535,10 +538,10 @@ void ctrlmenu ()
     else if (sms.device[1] == DEVICE_NONE) sprintf (ctrlmenu[1], "Port B: NONE");
     else if (sms.device[1] == DEVICE_PAD2B) sprintf (ctrlmenu[1], "Port B: GAMEPAD");
     sprintf (ctrlmenu[2], "Configure Player: %d", num+1);
-	  ret = domenu (&ctrlmenu[0], count, 0);
+    ret = domenu (&ctrlmenu[0], count, 0);
 
-	  switch (ret)
-	  {
+    switch (ret)
+    {
       case 0: /*** INPUT PORT A ***/
         sms.device[0] = (sms.device[0] + 1) % 4;
         break;
@@ -547,24 +550,24 @@ void ctrlmenu ()
         sms.device[1] = (sms.device[1] + 1) % 4;
         break;
 
-      case 2:	/*** Controller nr. ***/
-			  num ^= 1;
-			  break;
+      case 2:  /*** Controller nr. ***/
+        num ^= 1;
+        break;
 
-		  case 3:  /*** Gamepad ***/
-			  ogc_input__config(num, 0);
-			  break;
+      case 3:  /*** Gamepad ***/
+        ogc_input__config(num, 0);
+        break;
 
 #ifdef HW_RVL
-		  case 4:  /*** Wiimote ***/
+      case 4:  /*** Wiimote ***/
         ogc_input__config(num, 1);
         break;
 #endif
 
-		  case -1:
+      case -1:
         quit = 1;
         break;
-	  }
+    }
   }
 
   menu = prevmenu;
@@ -590,10 +593,10 @@ void optionmenu ()
 
   while (quit == 0)
   {
-	  ret = domenu (&miscmenu[0], count, 0);
+    ret = domenu (&miscmenu[0], count, 0);
     switch (ret)
-	  {
-      case 0:	/*** FM Enabled ***/
+    {
+      case 0:  /*** FM Enabled ***/
         sysmenu();
         break;
 
@@ -635,27 +638,27 @@ int loadsavemenu ()
 
   while (quit == 0)
   {
-    if (device == 0) sprintf(items[0], "Device: SDCARD");
+    if (device == 0) sprintf(items[0], "Device: FAT");
     else if (device == 1) sprintf(items[0], "Device: MCARD A");
     else if (device == 2) sprintf(items[0], "Device: MCARD B");
 
-	  ret = domenu (&items[0], count, 0);
-	  switch (ret)
-	  {
-		  case -1:
-			  quit = 1;
-			  break;
+    ret = domenu (&items[0], count, 0);
+    switch (ret)
+    {
+      case -1:
+        quit = 1;
+        break;
 
       case 0:
         device = (device + 1)%3;
-			  break;
+        break;
 
-			case 1:
-			case 2:
-				quit = ManageState(ret-1, device);
+      case 1:
+      case 2:
+        quit = ManageState(ret-1, device);
         if (quit) return 1;
         break;
-	  }
+    }
   }
 
   menu = prevmenu;
@@ -672,56 +675,92 @@ static u8 dvd_on = 0;
 
 int loadmenu ()
 {
-	int prevmenu = menu;
-	int ret;
-	int quit = 0;
-  	int count = 3 + dvd_on;
-  	char item[4][25] = {
-		{"Load Recent"},
-		{"Load from SDCARD"},
-		{"Load from DVD"},
-    	{"Stop DVD Motor"}
-	};
+  int prevmenu = menu;
+  int ret,count,size;
+  int quit = 0;
+#ifdef HW_RVL
+  char item[5][25] = {
+    {"Load Recent"},
+    {"Load from SD"},
+    {"Load from USB"},
+    {"Load from DVD"},
+    {"Stop DVD Motor"}
+  };
+#else
+    char item[4][25] = {
+    {"Load Recent"},
+    {"Load from SD"},
+    {"Load from DVD"},
+    {"Stop DVD Motor"}
+  };
+#endif
 
-	menu = load_menu;
-	
-	while (quit == 0)
-	{
-		strcpy (menutitle, "Press B to return");
-		ret = domenu (&item[0], count, 0);
-		switch (ret)
-		{
-			case -1: /*** Button B ***/
-				quit = 1;
-				break;
+  menu = load_menu;
+  
+  while (quit == 0)
+  {
+#ifdef HW_RVL
+    count = 4 + dvd_on;
+#else
+    count = 3 + dvd_on;
+#endif
+    strcpy (menutitle, "Press B to return");
+    ret = domenu (&item[0], count, 0);
+    switch (ret)
+    {
+      /*** Button B ***/
+      case -1: 
+        quit = 1;
+        break;
 
-			case 0: /*** Load Recent ***/
-				load_menu = menu;
-        if (OpenHistory()) return 1;
-				break;
-
-			case 1:  /*** Load from SCDARD ***/
-				load_menu = menu;
-				if (OpenSD()) return 1;
-				break;
-
+      /*** Load from DVD ***/
+#ifdef HW_RVL
+      case 3:
+#else
       case 2:
-				load_menu = menu;
-        if (OpenDVD())
+#endif
+        load_menu = menu;
+        size = DVD_Open(smsrom);
+        if (size)
         {
           dvd_on = 1;
+          smsromsize = size;
+          memfile_autosave();
+          load_rom ("");
+          system_poweron ();
+          memfile_autoload();
           return 1;
         }
         break;
   
-      case 3:  /*** Stop DVD Disc ***/
+      /*** Stop DVD Disc ***/
+#ifdef HW_RVL
+      case 4:  
+#else
+      case 3:
+#endif
         dvd_motor_off();
         dvd_on = 0;
-        count = 3 + dvd_on;
-				menu = load_menu;
-				break;
+        menu = load_menu;
+        break;
+
+      /*** Load from FAT device ***/
+      default:
+        load_menu = menu;
+        size = FAT_Open(ret,smsrom);
+        if (size)
+        {
+          smsromsize = size;
+          memfile_autosave();
+          load_rom ("");
+          system_poweron ();
+          memfile_autoload();
+          return 1;
+        }
+        break;
+
     }
-	}
+  }
 
   menu = prevmenu;
   return 0;
@@ -733,61 +772,61 @@ int loadmenu ()
  ****************************************************************************/
 void MainMenu ()
 {
-	menu = 0;
-	int ret;
-	int quit = 0;
-	int count = 7;
-	char items[7][25] =
-	{
-		{"Play Game"},
-		{"Hard Reset"},
-		{"Load New Game"},
-		{"Savestate Manager"},
-		{"Emulator Options"},
-		{"Return to Loader"},
-		{"System Reboot"}
-	};
+  menu = 0;
+  int ret;
+  int quit = 0;
+  int count = 7;
+  char items[7][25] =
+  {
+    {"Play Game"},
+    {"Hard Reset"},
+    {"Load New Game"},
+    {"Savestate Manager"},
+    {"Emulator Options"},
+    {"Return to Loader"},
+    {"System Reboot"}
+  };
 
-	/* Switch to menu default rendering mode (60hz or 50hz, but always 480 lines) */
-	VIDEO_Configure (vmode);
-	VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-	VIDEO_WaitVSync();
+  /* Switch to menu default rendering mode (60hz or 50hz, but always 480 lines) */
+  VIDEO_Configure (vmode);
+  VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
+  VIDEO_Flush();
+  VIDEO_WaitVSync();
+  VIDEO_WaitVSync();
 
-	while (quit == 0)
-	{
+  while (quit == 0)
+  {
     strcpy (menutitle, "");
-		ret = domenu (&items[0], count,0);
+    ret = domenu (&items[0], count,0);
 
     switch (ret)
-		{
-			case -1:  /*** Button B ***/
-			case 0:	/*** Play Game ***/
-				if (smsromsize) quit = 1;
-				break;
+    {
+      case -1:  /*** Button B ***/
+      case 0:  /*** Play Game ***/
+        if (smsromsize) quit = 1;
+        break;
 
-			case 1: /*** Emulator Reset ***/
-				if ((bios.enabled == 3) || smsromsize)
-				{
-					system_poweron();
-					quit = 1;
-				}
-				break;
+      case 1: /*** Emulator Reset ***/
+        if ((bios.enabled == 3) || smsromsize)
+        {
+          system_poweron();
+          quit = 1;
+        }
+        break;
 
-			case 2:	/*** Load ROM Menu ***/
-        		quit = loadmenu();
-				break;
+      case 2:  /*** Load ROM Menu ***/
+            quit = loadmenu();
+        break;
 
-			case 3:	 /*** SaveState Manager ***/
-				quit = loadsavemenu();
-				break;
+      case 3:   /*** SaveState Manager ***/
+        quit = loadsavemenu();
+        break;
 
-			case 4:
-				optionmenu();
-				break;
+      case 4:
+        optionmenu();
+        break;
 
-			case 5:
+      case 5:
         memfile_autosave();
         system_shutdown();
         VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
@@ -799,7 +838,7 @@ void MainMenu ()
         exit(0);
         break;
 
-			case 6:
+      case 6:
         memfile_autosave();
         system_shutdown();
         VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
@@ -807,25 +846,29 @@ void MainMenu ()
         VIDEO_WaitVSync();
 #ifdef HW_RVL
         DI_Close();
-				SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+        SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #else
-				SYS_ResetSystem(SYS_HOTRESET,0,0);
+        SYS_ResetSystem(SYS_HOTRESET,0,0);
 #endif
-				break;
-		}
-	}
+        break;
+    }
+  }
 
-	/*** Remove any still held buttons ***/
+  /*** Remove any still held buttons ***/
   while (PAD_ButtonsHeld(0))  PAD_ScanPads();
 #ifdef HW_RVL
   while (WPAD_ButtonsHeld(0)) WPAD_ScanPads();
 #endif
 
-	/*** Reinitialize GX ***/
+  /*** Reinitialize GX ***/
+  VIDEO_ClearFrameBuffer(vmode, xfb[whichfb], COLOR_BLACK);
+  VIDEO_Flush();
+  VIDEO_WaitVSync();
+  VIDEO_WaitVSync();
   ogc_video__reset();
 
 #ifndef HW_RVL
-	/*** Stop the DVD from causing clicks while playing ***/
-	uselessinquiry ();
+  /*** Stop the DVD from causing clicks while playing ***/
+  uselessinquiry ();
 #endif
 }

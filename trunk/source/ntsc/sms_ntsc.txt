@@ -54,10 +54,10 @@ of the standard setups before customizing it. This will ensure that all
 fields are properly initialized, including any added in future releases
 of the library that your current code can't even know about.
 
-	sms_ntsc_setup_t setup;
-	setup = sms_ntsc_composite; /* do this first */
-	setup.sharpness = custom_sharpness;
-	sms_ntsc_init( ntsc, &setup );
+  sms_ntsc_setup_t setup;
+  setup = sms_ntsc_composite; /* do this first */
+  setup.sharpness = custom_sharpness;
+  sms_ntsc_init( ntsc, &setup );
 
 
 Image Size

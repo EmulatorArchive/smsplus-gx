@@ -3,28 +3,28 @@
 #define _SOUND_H_
 
 enum {
-    STREAM_PSG_L,               /* PSG left channel */
-    STREAM_PSG_R,               /* PSG right channel */
-    STREAM_FM_MO,               /* YM2413 melody channel */
-    STREAM_FM_RO,               /* YM2413 rhythm channel */
-    STREAM_MAX                  /* Total # of sound streams */
+  STREAM_PSG_L, /* PSG left channel */
+  STREAM_PSG_R, /* PSG right channel */
+  STREAM_FM_MO, /* YM2413 melody channel */
+  STREAM_FM_RO, /* YM2413 rhythm channel */
+  STREAM_MAX    /* Total # of sound streams */
 };  
 
 /* Sound emulation structure */
 typedef struct
 {
-    void (*mixer_callback)(int16 **stream, int16 **output, int length);
-    int16 *output[2];
-    int16 *stream[STREAM_MAX];
-    int fm_which;
-    int enabled;
-    int fps;
-    int buffer_size;
-    int sample_count;
-    int sample_rate;
-    int done_so_far;
-    uint32 fm_clock;
-    uint32 psg_clock;
+  void (*mixer_callback)(int16 **stream, int16 **output, int length);
+  int16 *output[2];
+  int16 *stream[STREAM_MAX];
+  int fm_which;
+  int enabled;
+  int fps;
+  int buffer_size;
+  int sample_count;
+  int sample_rate;
+  int done_so_far;
+  uint32 fm_clock;
+  uint32 psg_clock;
 } snd_t;
 
 
