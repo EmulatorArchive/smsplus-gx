@@ -44,8 +44,8 @@ int system_save_state(void *mem)
   /*** Save cart info ***/
   for (i = 0; i < 4; i++)
   {
-      memcpy (&state[bufferptr], &cart.fcr[i], 1);
-      bufferptr++;
+    memcpy (&state[bufferptr], &cart.fcr[i], 1);
+    bufferptr++;
   }
 
   /*** Save SRAM ***/
@@ -102,7 +102,7 @@ void system_load_state(void *mem)
   /* write to FILE */
   fread(&state[0], 0x10000, 1, mem);
 #endif
-	
+  
   /* Initialize everything */
   bufferptr = 0;
   system_reset();
@@ -122,8 +122,8 @@ void system_load_state(void *mem)
   /*** Set cart info ***/
   for (i = 0; i < 4; i++)
   {
-     memcpy (&cart.fcr[i], &state[bufferptr], 1);
-     bufferptr++;
+    memcpy (&cart.fcr[i], &state[bufferptr], 1);
+    bufferptr++;
   }
 
   /*** Set SRAM ***/
@@ -154,14 +154,14 @@ void system_load_state(void *mem)
 
   for(i = 0x00; i <= 0x2F; i++)
   {
-	  cpu_readmap[i]  = &cart.rom[(i & 0x1F) << 10];
-      cpu_writemap[i] = dummy_write;
+    cpu_readmap[i]  = &cart.rom[(i & 0x1F) << 10];
+    cpu_writemap[i] = dummy_write;
   }
 
   for(i = 0x30; i <= 0x3F; i++)
   {
-     cpu_readmap[i] = &sms.wram[(i & 0x07) << 10];
-     cpu_writemap[i] = &sms.wram[(i & 0x07) << 10];
+    cpu_readmap[i] = &sms.wram[(i & 0x07) << 10];
+    cpu_writemap[i] = &sms.wram[(i & 0x07) << 10];
   }
 
   sms_mapper_w(3, cart.fcr[3]);
@@ -173,11 +173,10 @@ void system_load_state(void *mem)
   bg_list_index = 0x200;
   for(i = 0; i < 0x200; i++)
   {
-     bg_name_list[i] = i;
-     bg_name_dirty[i] = -1;
+    bg_name_list[i] = i;
+    bg_name_dirty[i] = -1;
   }
 
   /* Restore palette */
   for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i, 1);
-
 }

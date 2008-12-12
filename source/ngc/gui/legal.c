@@ -1,6 +1,9 @@
-/******************************************************************************
- *  Sega Master System / GameGear Emulator
- *  Copyright (C) 1998-2007  Charles MacDonald
+/****************************************************************************
+ *  legal.c
+ *
+ *  legal informations screen
+ *
+ *  code by Softdev (2006), Eke-Eke (2007,2008)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -15,7 +18,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  ***************************************************************************/
+
 
 #include "shared.h"
 #include "font.h"
@@ -79,17 +84,16 @@ void legal ()
       dispoffset = (316 * 320) + ((640 - dkpro_WIDTH) >> 2);
 
       for (h = 0; h < dkpro_HEIGHT; h++)
-	  {
-		for (w = 0; w < dkpro_WIDTH >> 1; w++)
-	    xfb[whichfb][dispoffset + w] = dkproraw[p++];
+    {
+    for (w = 0; w < dkpro_WIDTH >> 1; w++)
+      xfb[whichfb][dispoffset + w] = dkproraw[p++];
 
-		dispoffset += 320;
-	  }	
+    dispoffset += 320;
+    }
 
       free (dkproraw);
   }
   else WriteCentre (ypos, "Developed with DevkitPPC and libOGC");
-
 #ifdef HW_RVL
   SetScreen ();
   sleep(1);

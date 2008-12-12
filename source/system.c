@@ -19,7 +19,7 @@
 #include "shared.h"
 
 bitmap_t bitmap;
-cart_t cart;                
+cart_t cart;
 input_t input;
 
 static int iline_table[] = {0xC0, 0xE0, 0xF0};
@@ -52,9 +52,9 @@ void system_frame(int skip_render)
   if(vdp.mode <= 7) parse_line(0);
 
   /* 3D glasses faking */
-	if (sms.glasses_3d) skip_render = (sms.wram[0x1ffb] == 0) ? 1 : 0;
+  if (sms.glasses_3d) skip_render = (sms.wram[0x1ffb] == 0) ? 1 : 0;
 
-	for(vdp.line = 0; vdp.line < lpf;)
+  for(vdp.line = 0; vdp.line < lpf;)
   {
     z80_execute(CYCLES_PER_LINE);
 
@@ -144,7 +144,7 @@ void system_manage_sram(uint8 *sram, int slot, int mode)
 void system_poweron(void)
 {
   system_init();
-	system_reset();
+  system_reset();
 }
 
 void system_poweroff(void)

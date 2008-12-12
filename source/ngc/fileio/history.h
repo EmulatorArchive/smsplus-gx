@@ -1,10 +1,9 @@
-/*****************************************************************************
- * font.c
+/*
+ *  history.c
  *
- *   IPL FONT Engine, based on Qoob MP3 Player Font
+ *   Generic ROM history list managment
  *
- *   code by Softdev (2006), Eke-Eke(2007-2008)
- * 
+ *   code by Martin Disibio (6/17/08)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,24 +21,31 @@
  *
  ********************************************************************************/
 
-#ifndef _FONT_H
-#define _FONT_H
+#ifndef _HISTORY_H
+#define _HISTORY_H
 
-extern void init_font(void);
-extern void WriteCentre_HL( int y, char *string);
-extern void WriteCentre (int y, char *text);
-extern void write_font (int x, int y, char *text);
-extern void WaitPrompt (char *msg);
-extern void ShowAction (char *msg);
-extern void WaitButtonA ();
-extern void unpackBackdrop ();
-extern void ClearScreen ();
-extern void SetScreen ();
-extern void fntDrawBoxFilled (int x1, int y1, int x2, int y2, int color);
-extern void setfontcolour (int fcolour);
-extern int fheight;
-extern int font_size[256];
-extern u16 back_framewidth;
-extern u8 SILENT;
+#include "filesel.h"
+
+#define NUM_HISTORY_ENTRIES  (10)
+
+/****************************************************************************
+ * ROM Play History
+ *
+ ****************************************************************************/ 
+typedef struct 
+{
+  char filepath[MAXJOLIET];
+  char filename[MAXJOLIET];
+} t_history_entry;
+
+typedef struct
+{
+  t_history_entry entries[NUM_HISTORY_ENTRIES];
+} t_history;
+
+extern t_history history;
+extern void history_add_file(char *filepath, char *filename);
+extern void history_load();
+extern void set_history_defaults();
 
 #endif

@@ -326,10 +326,10 @@ static void makeTllTable(void)
 {
 #define dB2(x) (uint32)((x)*2)
 
-	static uint32 kltable[16] = {
+  static uint32 kltable[16] = {
     dB2( 0.000),dB2( 9.000),dB2(12.000),dB2(13.875),dB2(15.000),dB2(16.125),dB2(16.875),dB2(17.625),
     dB2(18.000),dB2(18.750),dB2(19.125),dB2(19.500),dB2(19.875),dB2(20.250),dB2(20.625),dB2(21.000)
-	} ;
+  } ;
   
   int32 tmp ;
   int fnum, block ,TL , KL ;
@@ -345,7 +345,7 @@ static void makeTllTable(void)
           }
           else
           {
-  	        tmp = kltable[fnum] - dB2(3.000) * (7 - block) ;
+            tmp = kltable[fnum] - dB2(3.000) * (7 - block) ;
             if(tmp <= 0)
               tllTable[fnum][block][TL][KL] = TL2EG(TL) ;
             else 
@@ -1053,7 +1053,7 @@ INLINE static uint32 calc_envelope(OPLL_SLOT *slot)
         if(slot->patch->EG)
         {
           slot->eg_phase = SL[slot->patch->SL] ;
-	        slot->eg_mode = SUSHOLD ;
+          slot->eg_mode = SUSHOLD ;
           UPDATE_EG(slot) ;
         }
         else
@@ -1160,9 +1160,9 @@ INLINE static int32 calc_slot_snare(OPLL_SLOT *slot, uint32 whitenoise)
   if(slot->egout>=(DB_MUTE-1)) return 0 ;
 
   if(whitenoise)
-	  return DB2LIN_TABLE[snaretable[slot->pgout] + slot->egout] + DB2LIN_TABLE[slot->egout + 6] ;
+    return DB2LIN_TABLE[snaretable[slot->pgout] + slot->egout] + DB2LIN_TABLE[slot->egout + 6] ;
   else
-	  return DB2LIN_TABLE[snaretable[slot->pgout] + slot->egout] ;
+    return DB2LIN_TABLE[snaretable[slot->pgout] + slot->egout] ;
 }
 
 INLINE static int32 calc_slot_cym(OPLL_SLOT *slot, int32 a, int32 b, int32 c)

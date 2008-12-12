@@ -21,77 +21,77 @@ uint8 z80_read_unmapped(void)
 /* Port $3E (Memory Control Port) */
 void memctrl_w(uint8 data)
 {
-	/* detect CARTRIDGE/BIOS enabled/disabled */
-	if (IS_SMS)
-	{
-		/* autodetect loaded BIOS ROM */
-		if ((bios.enabled != 3) && ((data & 0xE8) == 0xE8))
-		{
-			bios.enabled |= 2;
+  /* detect CARTRIDGE/BIOS enabled/disabled */
+  if (IS_SMS)
+  {
+    /* autodetect loaded BIOS ROM */
+    if ((bios.enabled != 3) && ((data & 0xE8) == 0xE8))
+    {
+      bios.enabled |= 2;
       if (option.use_bios) bios.enabled |= 1;
-			memcpy(bios.rom, cart.rom, cart.size);
-			bios.pages = cart.pages;
-			cart.loaded = 0;
-		}
+      memcpy(bios.rom, cart.rom, cart.size);
+      bios.pages = cart.pages;
+      cart.loaded = 0;
+    }
 
-		switch (data & 0x48)
-		{
-			case 0x00:
-			case 0x08:
-				/* enables CART */
-				if (cart.loaded) slot.rom = cart.rom;
-				else slot.rom = NULL;
-				slot.pages = cart.pages;
-				slot.mapper = cart.mapper;
-				slot.fcr = &cart.fcr[0];
+    switch (data & 0x48)
+    {
+      case 0x00:
+      case 0x08:
+        /* enables CART */
+        if (cart.loaded) slot.rom = cart.rom;
+        else slot.rom = NULL;
+        slot.pages = cart.pages;
+        slot.mapper = cart.mapper;
+        slot.fcr = &cart.fcr[0];
 
-				/* reset CART mapping */
-				if ((data & 0x40) != (sms.memctrl & 0x40))
-				{
-				  cart.fcr[0] = 0x00;
-				  cart.fcr[1] = 0x00;
-				  cart.fcr[2] = 0x01;
-				  cart.fcr[3] = 0x00;
-				}
-				break;
-			
-			case 0x40:
-				/* enables BIOS */
-				slot.rom   = bios.rom;
-				slot.pages = bios.pages;
-				slot.mapper = MAPPER_SEGA;
-				slot.fcr = &cart.fcr[0];
-				break;
-			
-			default:
-				/* disables CART & BIOS */
-				slot.rom   = NULL;
-				break;
-		}
-		
-		/* reset SLOT mapping */
-		if (slot.rom)
-		{
-			mapper_reset();
-			cpu_readmap[0]  = slot.rom ? &slot.rom[0] : dummy_read;
-			cpu_writemap[0] = dummy_write;
-			sms_mapper_w(3, slot.fcr[3]);
-			sms_mapper_w(2, slot.fcr[2]);
-			sms_mapper_w(1, slot.fcr[1]);
-			sms_mapper_w(0, slot.fcr[0]);
-		}
-		else
-		{
-			uint8 i;
-			for(i = 0x00; i <= 0x2F; i++)
-			{
-				cpu_readmap[i]  = dummy_read;
-				cpu_writemap[i] = dummy_write;
-			}
-		}
-	}
+        /* reset CART mapping */
+        if ((data & 0x40) != (sms.memctrl & 0x40))
+        {
+          cart.fcr[0] = 0x00;
+          cart.fcr[1] = 0x00;
+          cart.fcr[2] = 0x01;
+          cart.fcr[3] = 0x00;
+        }
+        break;
+      
+      case 0x40:
+        /* enables BIOS */
+        slot.rom   = bios.rom;
+        slot.pages = bios.pages;
+        slot.mapper = MAPPER_SEGA;
+        slot.fcr = &cart.fcr[0];
+        break;
+      
+      default:
+        /* disables CART & BIOS */
+        slot.rom   = NULL;
+        break;
+    }
+    
+    /* reset SLOT mapping */
+    if (slot.rom)
+    {
+      mapper_reset();
+      cpu_readmap[0]  = slot.rom ? &slot.rom[0] : dummy_read;
+      cpu_writemap[0] = dummy_write;
+      sms_mapper_w(3, slot.fcr[3]);
+      sms_mapper_w(2, slot.fcr[2]);
+      sms_mapper_w(1, slot.fcr[1]);
+      sms_mapper_w(0, slot.fcr[0]);
+    }
+    else
+    {
+      uint8 i;
+      for(i = 0x00; i <= 0x2F; i++)
+      {
+        cpu_readmap[i]  = dummy_read;
+        cpu_writemap[i] = dummy_write;
+      }
+    }
+  }
 
-  sms.memctrl = data;	
+  sms.memctrl = data;  
 }
 
 /*--------------------------------------------------------------------------*/
@@ -102,7 +102,7 @@ void sms_port_w(uint16 port, uint8 data)
   port &= 0xFF;
 
   /* access FM unit */
-	if(port >= 0xF0)
+  if(port >= 0xF0)
   {
     switch(port)
     {
@@ -151,7 +151,7 @@ uint8 sms_port_r(uint16 port)
   port &= 0xFF;
 
   /* IO port disabled: access FM unit (fixed) */
-	if((port == 0xF2) /*&& (sms.memctrl & 4)*/)
+  if((port == 0xF2) /*&& (sms.memctrl & 4)*/)
   return fmunit_detect_r();
 
   switch(port & 0xC0)

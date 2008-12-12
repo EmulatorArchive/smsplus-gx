@@ -1,9 +1,9 @@
-/****************************************************************************
- *  ogc_audio.c
+/*
+ * dvd.c
+ * 
+ *   Low-level DVD access
  *
- *  SMS Plus GX audio support
- *
- *  code by Softdev (2006), Eke-Eke (2007,2008)
+ *   code by Softdev (2006), Eke-Eke (2007,2008) 
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -19,16 +19,18 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- ***************************************************************************/
+ ********************************************************************************/
 
-#ifndef _GC_AUDIO_H_
-#define _GC_AUDIO_H_
 
-extern u8 soundbuffer[16][3840];
-extern int mixbuffer;
+#ifndef _DVD_H_
+#define _DVD_H_
 
-extern void ogc_audio__init(void);
-extern void ogc_audio__reset(void);
-extern void ogc_audio__update(void);
+extern u32 dvd_read (void *dst, u32 len, u64 offset);
+extern void dvd_motor_off ();
+
+#ifndef HW_RVL
+extern void uselessinquiry ();
+extern void dvd_drive_detect();
+#endif
 
 #endif

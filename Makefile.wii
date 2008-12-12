@@ -18,9 +18,9 @@ include $(DEVKITPPC)/wii_rules
 TARGET		:=	smsplus_wii
 BUILD		:=	build_wii
 SOURCES		:=	source source/cpu source/sound source/ntsc  \
-			source/ngc source/ngc/gui
+			source/ngc source/ngc/gui source/ngc/fileio
 INCLUDES	:=	source source/cpu source/sound source/ntsc  \
-			source/ngc source/ngc/gui
+			source/ngc source/ngc/gui source/ngc/fileio
 
 #---------------------------------------------------------------------------------
 # options for code generation

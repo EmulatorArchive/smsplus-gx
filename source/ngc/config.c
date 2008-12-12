@@ -1,26 +1,50 @@
+/****************************************************************************
+ *  config.c
+ *
+ *  SMS Plus GX configuration file support
+ *
+ *  code by Eke-Eke (2008)
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ ***************************************************************************/
 #include "shared.h"
-#include "font.h"
 
-#include <fat.h>
 #include <sys/dir.h>
 
 #ifdef HW_RVL
-#define CONFIG_VERSION "SMSPLUS 1.3.1W"
+#define CONFIG_VERSION "SMSPLUS 1.3.0W"
 #else
-#define CONFIG_VERSION "SMSPLUS 1.3.1G"
+#define CONFIG_VERSION "SMSPLUS 1.3.0G"
 #endif
 
 void config_save()
 {
-  if (!use_FAT) return;
+  char pathname[MAXPATHLEN];
+
+  if (!fat_enabled) return;
 
   /* first check if directory exist */
-  DIR_ITER *dir = diropen("/smsplus");
-  if (dir == NULL) mkdir("/smsplus",S_IRWXU);
+  sprintf (pathname, DEFAULT_PATH);
+  DIR_ITER *dir = diropen(pathname);
+  if (dir == NULL) mkdir(pathname,S_IRWXU);
   else dirclose(dir);
 
   /* open configuration file */
-  FILE *fp = fopen("/smsplus/smsplus.ini", "wb");
+  sprintf (pathname, "%s/config.ini", pathname);
+  FILE *fp = fopen(pathname, "wb");
   if (fp == NULL) return;
 
   /* save options */
@@ -37,8 +61,11 @@ void config_save()
 
 void config_load()
 {
+  char pathname[MAXPATHLEN];
+
   /* open configuration file */
-  FILE *fp = fopen("/smsplus/smsplus.ini", "rb");
+  sprintf (pathname, "%s/config.ini", DEFAULT_PATH);
+  FILE *fp = fopen(pathname, "rb");
   if (fp == NULL) return;
 
   /* read version */
@@ -48,31 +75,27 @@ void config_load()
   if (strcmp(version,CONFIG_VERSION)) return;
   
   /* read file */
-  fp = fopen("/smsplus/smsplus.ini", "rb");
+  fp = fopen(pathname, "rb");
   fread(&option, sizeof(option), 1, fp);
 
-  /* load key mapping */
+ /* load key mapping */
   fread(pad_keymap, sizeof(pad_keymap), 1, fp);
 #ifdef HW_RVL
   fread(wpad_keymap, sizeof(wpad_keymap), 1, fp);
 #endif
-
   fclose(fp);
 }
 
-/*****************************************************************************
- * set_option_defaults
- *****************************************************************************/
 void set_option_defaults ()
 {
   /* version TAG */
   strncpy(option.version,CONFIG_VERSION,15);
 
-	option.sndrate      = 48000;
-	option.country      = 0;
-	option.console      = 0;
-	option.fm_enable    = 1;
-	option.fm_which     = SND_EMU2413;
+  option.sndrate      = 48000;
+  option.country      = 0;
+  option.console      = 0;
+  option.fm_enable    = 1;
+  option.fm_which     = SND_EMU2413;
   option.overscan     = 1;
   option.xshift       = 0;
   option.yshift       = 0;

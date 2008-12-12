@@ -1,6 +1,9 @@
-/******************************************************************************
- *  Sega Master System / GameGear Emulator
- *  Copyright (C) 1998-2007  Charles MacDonald
+/****************************************************************************
+ *  ngc.c
+ *
+ *  SMS Plus GX main
+ *
+ *  code by Softdev (2006), Eke-Eke (2007,2008)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -15,9 +18,10 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  ***************************************************************************/
+
 #include "shared.h"
-#include "dvd.h"
 #include "font.h"
 #include "history.h"
 
@@ -26,6 +30,8 @@
 #else
 #include <di/di.h>
 #endif
+
+#include <fat.h>
 
 int Shutdown = 0;
 
@@ -40,7 +46,7 @@ void Power_Off(void)
 
 
 /***************************************************************************
- * SMSPlus Virtual Machine
+ * SMS Plus Virtual Machine
  *
  ***************************************************************************/
 int smsromsize;
@@ -48,11 +54,14 @@ uint8 *smsrom;
 
 static void load_bios()
 {
+  char pathname[MAXPATHLEN];
+
   /* reset BIOS flag */
   bios.enabled  = 0;
 
   /* open BIOS file */
-  FILE *fp = fopen("/smsplus/SMS_BIOS.sms", "rb");
+  sprintf (pathname, "%s/BIOS.sms",DEFAULT_PATH);
+  FILE *fp = fopen(pathname, "rb");
   if (fp == NULL) return;
 
   /* get BIOS size */
@@ -77,12 +86,12 @@ static void load_bios()
 
 static void init_machine (void)
 {
-  /*** Allocate cart_rom here ***/
-  smsrom = memalign(32, 0x100000);
+  /* Allocate cart_rom here */
+  smsrom = memalign(32, 1024 *1024);
   smsromsize = 0;
 
   /* Look for BIOS rom */
-  bios.rom = memalign(32, 0x100000);
+  bios.rom = memalign(32, 1024 * 1024);
   load_bios();
 
   /* allocate global work bitmap */
@@ -104,12 +113,12 @@ static void init_machine (void)
  *
  ***************************************************************************/
 int frameticker = 0;
-bool use_FAT = 0;
+bool fat_enabled = 0;
 
 int main (int argc, char *argv[])
 {
 #ifdef HW_RVL
-	/* initialize Wii DVD interface first */
+  /* initialize Wii DVD interface first */
   DI_Close();
   DI_Init();
 #endif
@@ -136,10 +145,18 @@ int main (int argc, char *argv[])
   /* Initialize FAT Interface */
   if (fatInitDefault() == true)
   {
-    use_FAT = 1;
+    fat_enabled = 1;
+#ifdef HW_RVL
+    fatEnableReadAhead ("sd", 6, 64);
+    fatEnableReadAhead ("usb", 6, 64);
+#else
+    fatEnableReadAhead ("carda", 6, 64);
+    fatEnableReadAhead ("cardb", 6, 64);
+#endif
   }
 
   /* Default Config */
+  legal();
   set_option_defaults ();
   config_load();
 
@@ -147,14 +164,13 @@ int main (int argc, char *argv[])
   set_history_defaults();
   history_load();
 
-  /* Initialize SMS Virtual Machine */
+  /* Initialize Virtual Machine */
   init_machine ();
 
   /* Show Menu */
-  legal ();
   MainMenu();
   ConfigRequested = 0;
-			
+
   /* Initialize Frame timings */
   frameticker = 0;
   prev = gettime();
@@ -172,11 +188,11 @@ int main (int argc, char *argv[])
       usBetweenFrames = sms.display ? 20000 : 16666;
       now = gettime();
       if (diff_usec(prev, now) > usBetweenFrames)
-	    {
+      {
         /* Frame skipping */
         prev = now;
-		    system_frame(1);
-	    }
+        system_frame(1);
+      }
       else
       {
         /* Delay */
@@ -188,7 +204,7 @@ int main (int argc, char *argv[])
       }
     }
     else
-    {		  
+    {
       /* use VSync */
       if (frameticker > 1)
       {
@@ -199,11 +215,11 @@ int main (int argc, char *argv[])
       else
       {
         /* Delay */
-        while (!frameticker) usleep(10);	
+        while (!frameticker) usleep(10);  
         
         system_frame (0);
       }
-      
+
       frameticker--;
     }
 
@@ -222,7 +238,6 @@ int main (int argc, char *argv[])
       ConfigRequested = 0;
 
       /* reset frame timings */
-      frameticker = 0;
       prev = gettime();
     }
   }

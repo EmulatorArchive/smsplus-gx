@@ -53,7 +53,7 @@ uint32 bp_lut[0x10000];
 static __inline__ uint32 read_dword(void *address)
 {
   if ((uint32)address & 3)
-	{
+  {
 #ifdef LSB_FIRST  /* little endian version */
     return ( *((uint8 *)address) +
             (*((uint8 *)address+1) << 8)  +
@@ -65,8 +65,8 @@ static __inline__ uint32 read_dword(void *address)
             (*((uint8 *)address+1) << 16) +
             (*((uint8 *)address)   << 24) );
 #endif
-	}
-	else
+  }
+  else
     return *(uint32 *)address;
 }
 
@@ -74,7 +74,7 @@ static __inline__ uint32 read_dword(void *address)
 static __inline__ void write_dword(void *address, uint32 data)
 {
   if ((uint32)address & 3)
-	{
+  {
 #ifdef LSB_FIRST
     *((uint8 *)address) =  data;
     *((uint8 *)address+1) = (data >> 8);
@@ -86,7 +86,7 @@ static __inline__ void write_dword(void *address, uint32 data)
     *((uint8 *)address+1) = (data >> 16);
     *((uint8 *)address)   = (data >> 24);
 #endif
-		return;
+    return;
   }
   else
     *(uint32 *)address = data;
@@ -197,10 +197,10 @@ void render_init(void)
 #endif
   }
 
-	sms_cram_expand_table[0] =  0;
-	sms_cram_expand_table[1] = (5 << 3)  + (1 << 2);
-	sms_cram_expand_table[2] = (15 << 3) + (1 << 2);
-	sms_cram_expand_table[3] = (27 << 3) + (1 << 2);
+  sms_cram_expand_table[0] =  0;
+  sms_cram_expand_table[1] = (5 << 3)  + (1 << 2);
+  sms_cram_expand_table[2] = (15 << 3) + (1 << 2);
+  sms_cram_expand_table[3] = (27 << 3) + (1 << 2);
 
   for(i = 0; i < 16; i++)
   {
@@ -239,54 +239,54 @@ void render_reset(void)
 /* Draw a line of the display */
 void render_line(int line)
 {
-	/* Viewport Line index (including vertical borders) */
-	int vline  = (line + bitmap.viewport.y - ((vdp.height - bitmap.viewport.h)/2)) % (sms.display ? 313 : 262);
-	
+  /* Viewport Line index (including vertical borders) */
+  int vline  = (line + bitmap.viewport.y - ((vdp.height - bitmap.viewport.h)/2)) % (sms.display ? 313 : 262);
+  
   /* Ensure we're within the viewport range */
   if ((vline < 0) || (vline >= ((2 * bitmap.viewport.y) + bitmap.viewport.h))) return;
 
-	/* Point to current line in output buffer */
+  /* Point to current line in output buffer */
 #ifdef NGC
-	linebuf = &internal_buffer[option.overscan ? 14:0];
+  linebuf = &internal_buffer[option.overscan ? 14:0];
 #else
-	if (bitmap.depth == 8) linebuf = &bitmap.data[(vline * bitmap.pitch) + (option.overscan ? 14:0)];
+  if (bitmap.depth == 8) linebuf = &bitmap.data[(vline * bitmap.pitch) + (option.overscan ? 14:0)];
   else linebuf = &internal_buffer[option.overscan ? 14:0];
 #endif
 
-	/* Vertical borders */
+  /* Vertical borders */
   if ((vline < bitmap.viewport.y) || (vline >= bitmap.viewport.h + bitmap.viewport.y))
   {
-		memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
+    memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
   }
   else
   {
-		/* blanked line */
-		if (!(vdp.reg[1] & 0x40))
-		{
-			memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w);
-		}
-		else
-		{
+    /* blanked line */
+    if (!(vdp.reg[1] & 0x40))
+    {
+      memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w);
+    }
+    else
+    {
       /* Update pattern cache */
       update_bg_pattern_cache();
 
-			/* Draw background */
-			render_bg(line);
+      /* Draw background */
+      render_bg(line);
 
-			/* Draw sprites */
-			render_obj(line);
+      /* Draw sprites */
+      render_obj(line);
 
-			/* Blank leftmost column of display */
-			if(vdp.reg[0] & 0x20) memset(linebuf, BACKDROP_COLOR, 8);
+      /* Blank leftmost column of display */
+      if(vdp.reg[0] & 0x20) memset(linebuf, BACKDROP_COLOR, 8);
     }
 
-		/* Horizontal borders */
-		if (option.overscan)
-		{
-			memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
-			memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
-		}
-	}
+    /* Horizontal borders */
+    if (option.overscan)
+    {
+      memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
+      memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
+    }
+  }
 
   /* LightGun mark */
   if (sms.device[0] == DEVICE_LIGHTGUN)
@@ -311,7 +311,7 @@ void render_line(int line)
   if (option.ntsc)  sms_ntsc_blit(&sms_ntsc, ( SMS_NTSC_IN_T const * )pixel, internal_buffer, bitmap.viewport.w + 2*bitmap.viewport.x, vline);
   else remap_8_to_16(vline);
 #else
-	if(bitmap.depth != 8) remap_8_to_16(vline);
+  if(bitmap.depth != 8) remap_8_to_16(vline);
 #endif
 }
 
@@ -326,7 +326,7 @@ void render_bg_sms(int line)
   int hscroll = ((vdp.reg[0] & 0x40) && (line < 0x10)) ? 0 : (0x100 - vdp.reg[8]);
   int column = 0;
   uint16 attr;
-	uint16 nt_addr = (vdp.ntab + ((v_line >> 3) << 6)) & (((sms.console == CONSOLE_SMS) && !(vdp.reg[2] & 1)) ? ~0x400 :0xFFFF);
+  uint16 nt_addr = (vdp.ntab + ((v_line >> 3) << 6)) & (((sms.console == CONSOLE_SMS) && !(vdp.reg[2] & 1)) ? ~0x400 :0xFFFF);
   uint16 *nt = (uint16 *)&vdp.vram[nt_addr];
   int nt_scroll = (hscroll >> 3);
   int shift = (hscroll & 7);
@@ -499,16 +499,16 @@ void render_obj_sms(int line)
         {
           /* Source pixel from cache */
           uint8 sp = cache_ptr[(x >> 1)];
-  
+
           /* Only draw opaque sprite pixels */
           if(sp)
           {
             /* Background pixel from line buffer */
             uint8 bg = linebuf_ptr[x];
-  
+
             /* Look up result */
             linebuf_ptr[x] = lut[(bg << 8) | (sp)];
-  
+
             /* Update collision buffer */
             collision_buffer |= bg;
           }
@@ -524,16 +524,16 @@ void render_obj_sms(int line)
         {
           /* Source pixel from cache */
           uint8 sp = cache_ptr[x];
-  
+
           /* Only draw opaque sprite pixels */
           if(sp)
           {
             /* Background pixel from line buffer */
             uint8 bg = linebuf_ptr[x];
-  
+
             /* Look up result */
             linebuf_ptr[x] = lut[(bg << 8) | (sp)];
-  
+
             /* Update collision buffer */
             collision_buffer |= bg;
           }
@@ -605,7 +605,7 @@ void palette_sync(int index, int force)
     r = (vdp.cram[(index << 1) | (0)] >> 0) & 0x0F;
     g = (vdp.cram[(index << 1) | (0)] >> 4) & 0x0F;
     b = (vdp.cram[(index << 1) | (1)] >> 0) & 0x0F;
-  
+
     r = gg_cram_expand_table[r];
     g = gg_cram_expand_table[g];
     b = gg_cram_expand_table[b];
@@ -616,12 +616,12 @@ void palette_sync(int index, int force)
     r = (vdp.cram[index] >> 0) & 3;
     g = (vdp.cram[index] >> 2) & 3;
     b = (vdp.cram[index] >> 4) & 3;
-  
+
     r = sms_cram_expand_table[r];
     g = sms_cram_expand_table[g];
     b = sms_cram_expand_table[b];
   }
-  
+
 #ifndef NGC
   bitmap.pal.color[index][0] = r;
   bitmap.pal.color[index][1] = g;
@@ -639,7 +639,7 @@ void remap_8_to_16(int line)
   uint16 *p = (uint16 *)&bitmap.data[(line * bitmap.pitch)];
   int width = bitmap.viewport.w + 2*bitmap.viewport.x;
 
-	for(i = 0; i < width; i++)
+  for(i = 0; i < width; i++)
   {
     p[i] = pixel[ internal_buffer[i] & PIXEL_MASK ];
   }

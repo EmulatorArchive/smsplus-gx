@@ -1,8 +1,9 @@
-/******************************************************************************
+/****************************************************************************
+ *  ogc_input.c
  *
- *  SMS Plus GX - Sega Master System / GameGear Emulator
+ *  SMS Plus GX input support
  *
- *  SMS Plus - Sega Master System / GameGear Emulator
+ *  code by Eke-Eke (2008)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -17,6 +18,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  ***************************************************************************/
 
 #include "shared.h"
@@ -36,6 +38,15 @@
 
 int ConfigRequested = 1;
 
+static const char *keys_name[MAX_KEYS] =
+{
+  "Button 1",
+  "Button 2",
+  "Pause",
+  "SoftReset",
+  "Menu"
+};
+
 /* gamepad default map (this can be reconfigured) */
 u16 pad_keymap[MAX_INPUTS][MAX_KEYS] =
 {
@@ -44,7 +55,7 @@ u16 pad_keymap[MAX_INPUTS][MAX_KEYS] =
 };
 
 /* gamepad available buttons */
-static u16 pad_keys[9] =
+static const u16 pad_keys[8] =
 {
   PAD_TRIGGER_Z,
   PAD_TRIGGER_R,
@@ -114,14 +125,6 @@ static u32 wpad_keys[20] =
 };
 #endif
 
-static const char *keys_name[MAX_KEYS] =
-{
-  "Button 1",
-  "Button 2",
-  "Pause",
-  "SoftReset",
-  "Menu"
-};
 
 u8 softreset = 0;
 static void set_softreset(void)
@@ -188,7 +191,7 @@ static void pad_update()
 {
   int i;
   u16 p;
-	s8 x,y;
+  s8 x,y;
 
   /* update PAD status */
   PAD_ScanPads();
@@ -197,7 +200,7 @@ static void pad_update()
   {
     x = PAD_StickX (i);
     y = PAD_StickY (i);
-	  p = PAD_ButtonsHeld(i);
+    p = PAD_ButtonsHeld(i);
 
     /* check emulated device type */
     switch (sms.device[i])
@@ -311,7 +314,7 @@ static s8 WPAD_StickX(u8 chan,u8 right)
   if (mag > 1.0) mag = 1.0;
   else if (mag < -1.0) mag = -1.0;
   double val = mag * sin(PI * ang/180.0f);
- 
+
   return (s8)(val * 128.0f);
 }
 
@@ -550,7 +553,7 @@ void ogc_input__init(void)
 
 #ifdef HW_RVL
   WPAD_Init();
-	WPAD_SetIdleTimeout(60);
+  WPAD_SetIdleTimeout(60);
   WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
   WPAD_SetVRes(WPAD_CHAN_ALL,640,480);
 #endif
@@ -614,7 +617,7 @@ u16 ogc_input__getMenuButtons(void)
   s8 y  = PAD_StickY(0);
   if (x > 70) p |= PAD_BUTTON_RIGHT;
   else if (x < -70) p |= PAD_BUTTON_LEFT;
-	if (y > 60) p |= PAD_BUTTON_UP;
+  if (y > 60) p |= PAD_BUTTON_UP;
   else if (y < -60) p |= PAD_BUTTON_DOWN;
 
 #ifdef HW_RVL
@@ -634,7 +637,7 @@ u16 ogc_input__getMenuButtons(void)
   else if (q & WPAD_BUTTON_DOWN)  p |= ir.valid ? PAD_BUTTON_DOWN : PAD_BUTTON_RIGHT;
   else if (q & WPAD_BUTTON_LEFT)  p |= ir.valid ? PAD_BUTTON_LEFT : PAD_BUTTON_DOWN;
   else if (q & WPAD_BUTTON_RIGHT) p |= ir.valid ? PAD_BUTTON_RIGHT : PAD_BUTTON_UP;
-  
+
   if (h & WPAD_BUTTON_UP)
   {
     held_cnt ++;
@@ -704,7 +707,7 @@ u16 ogc_input__getMenuButtons(void)
   if (q & WPAD_CLASSIC_BUTTON_B)      p |= PAD_BUTTON_B;
   if (q & WPAD_CLASSIC_BUTTON_HOME)   p |= PAD_TRIGGER_Z;
 
- #endif
+#endif
 
   return p;
 }

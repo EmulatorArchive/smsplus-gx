@@ -1,8 +1,9 @@
-/******************************************************************************
+/****************************************************************************
+ *  ogc_audio.c
  *
- *  SMS Plus - Sega Master System / GameGear Emulator
+ *  SMS Plus GX audio support
  *
- *  NGC/Wii Audio support
+ *  code by Softdev (2006), Eke-Eke (2007,2008)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -17,10 +18,10 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  ***************************************************************************/
 
 #include "shared.h"
-#include "ogc_input.h"
 
 /* global datas */
 unsigned char soundbuffer[16][3840] ATTRIBUTE_ALIGN(32);
@@ -42,33 +43,33 @@ static void AudioSwitchBuffers()
     IsPlaying = 0;
     return;
   }
-  
+
   u32 dma_len = (sms.display) ? 3840 : 3200;
 
   /* restart audio DMA with current soundbuffer */
   AUDIO_InitDMA((u32) soundbuffer[playbuffer], dma_len);
   DCFlushRange(soundbuffer[playbuffer], dma_len);
   AUDIO_StartDMA();
-    
+
   /* increment soundbuffers index */
   playbuffer++;
   playbuffer &= 0xf;
+
   if (playbuffer == mixbuffer)
   {
     playbuffer--;
     if ( playbuffer < 0 ) playbuffer = 15;
   }
-
   IsPlaying = 1;
 }
 
 
 void ogc_audio__init(void)
 {
-	AUDIO_Init (NULL);
-	AUDIO_SetDSPSampleRate (AI_SAMPLERATE_48KHZ);
-	AUDIO_RegisterDMACallback (AudioSwitchBuffers);
-	memset(soundbuffer, 0, 16 * 3840);
+  AUDIO_Init (NULL);
+  AUDIO_SetDSPSampleRate (AI_SAMPLERATE_48KHZ);
+  AUDIO_RegisterDMACallback (AudioSwitchBuffers);
+  memset(soundbuffer, 0, 16 * 3840);
 }
 
 void ogc_audio__reset(void)

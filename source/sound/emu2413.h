@@ -17,7 +17,8 @@ extern "C" {
 
 #if 0
 #define PI 3.14159265358979
-#endif
+#endif
+
 //typedef unsigned int uint32 ;
 //typedef int int32 ;
 //typedef signed short int16 ;
@@ -54,7 +55,7 @@ typedef struct {
   int block ;         /* Block */
   int volume ;        /* Current volume */
   int sustine ;       /* Sustine 1 = ON, 0 = OFF */
-  uint32 tll ;	      /* Total Level + Key scale level*/
+  uint32 tll ;        /* Total Level + Key scale level*/
   uint32 rks ;        /* Key scale offset (Rks) */
   int eg_mode ;       /* Current state */
   uint32 eg_phase ;   /* Phase */

@@ -1,10 +1,9 @@
-/*****************************************************************************
- * font.c
- *
- *   IPL FONT Engine, based on Qoob MP3 Player Font
- *
- *   code by Softdev (2006), Eke-Eke(2007-2008)
+/*
+ * filesel.c
  * 
+ *   File Selection menu
+ *
+ *   code by Softdev (2006), Eke-Eke (2007,2008) 
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,24 +21,40 @@
  *
  ********************************************************************************/
 
-#ifndef _FONT_H
-#define _FONT_H
+#ifndef _FILESEL_H
+#define _FILESEL_H
 
-extern void init_font(void);
-extern void WriteCentre_HL( int y, char *string);
-extern void WriteCentre (int y, char *text);
-extern void write_font (int x, int y, char *text);
-extern void WaitPrompt (char *msg);
-extern void ShowAction (char *msg);
-extern void WaitButtonA ();
-extern void unpackBackdrop ();
-extern void ClearScreen ();
-extern void SetScreen ();
-extern void fntDrawBoxFilled (int x1, int y1, int x2, int y2, int color);
-extern void setfontcolour (int fcolour);
-extern int fheight;
-extern int font_size[256];
-extern u16 back_framewidth;
-extern u8 SILENT;
+#define MAXJOLIET 256
+#define MAXFILES 1000
+
+/* this is emulator specific ! */
+#define PAGESIZE 12
+#define PAGEOFFSET 120
+
+
+/* Filelist structure */
+typedef struct
+{
+  u64 offset;
+  unsigned int length;
+  char flags;
+  char filename[MAXJOLIET];
+  u16 filename_offset;
+}FILEENTRIES;
+
+
+/* Global Variables */
+extern FILEENTRIES filelist[MAXFILES];
+extern char rom_filename[MAXJOLIET];
+extern int maxfiles;
+extern int offset;
+extern int selection;
+extern int old_selection;
+extern int old_offset;
+extern int useFAT;
+extern int haveDVDdir;
+extern int haveFATdir;
+
+extern int FileSelector(unsigned char *buffer);
 
 #endif

@@ -245,31 +245,31 @@ void set_config()
   /* SMS Header is located at 0x7ff0 */
   if ((cart.size > 0x7000) && (!memcmp (&cart.rom[0x7ff0], "TMR SEGA", 8)))
   {
-	  uint8 region = (cart.rom[0x7fff] & 0xf0) >> 4;
+    uint8 region = (cart.rom[0x7fff] & 0xf0) >> 4;
 
     switch (region)
-	  {
-	    case 5:
-	      sms.console = CONSOLE_GG;
-	      sms.territory = TERRITORY_DOMESTIC;
-		    break;
+    {
+      case 5:
+        sms.console = CONSOLE_GG;
+        sms.territory = TERRITORY_DOMESTIC;
+        break;
 
-	    case 6:
-	    case 7:
-	      sms.console = CONSOLE_GG;
-	      sms.territory = TERRITORY_EXPORT;
-	      break;
+      case 6:
+      case 7:
+        sms.console = CONSOLE_GG;
+        sms.territory = TERRITORY_EXPORT;
+        break;
 
-	    case 3:
-	      sms.console = CONSOLE_SMS;
-		    sms.territory = TERRITORY_DOMESTIC;
-		    break;
-		
-		  default:
-	      sms.console = CONSOLE_SMS2;
-		    sms.territory = TERRITORY_EXPORT;
-	      break;
-	  }
+      case 3:
+        sms.console = CONSOLE_SMS;
+        sms.territory = TERRITORY_DOMESTIC;
+        break;
+    
+      default:
+        sms.console = CONSOLE_SMS2;
+        sms.territory = TERRITORY_EXPORT;
+        break;
+    }
   }
 
   /* retrieve game settings from database */
@@ -277,12 +277,12 @@ void set_config()
   error("CRC = 0x%x\n", cart.crc);
   for (i = 0; i < gamecount; i++)
   {
-	  if (cart.crc == game_list[i].crc)
-	  {
-		  cart.mapper = game_list[i].mapper;
+    if (cart.crc == game_list[i].crc)
+    {
+      cart.mapper = game_list[i].mapper;
       sms.display = game_list[i].display;
       sms.territory = game_list[i].territory;
-		  sms.glasses_3d = game_list[i].glasses_3d;
+      sms.glasses_3d = game_list[i].glasses_3d;
       sms.console =  game_list[i].console;
       sms.device[0] = game_list[i].device;
       sms.device[1] = game_list[i].device;
@@ -308,18 +308,18 @@ void set_config()
 
   if (option.country == 1) /* USA */
   {
-	  sms.display = DISPLAY_NTSC;
-	  sms.territory = TERRITORY_EXPORT;
+    sms.display = DISPLAY_NTSC;
+    sms.territory = TERRITORY_EXPORT;
   }
   else if (option.country == 2) /* EUROPE */
   {
-	  sms.display = DISPLAY_PAL;
-	  sms.territory = TERRITORY_EXPORT;
+    sms.display = DISPLAY_PAL;
+    sms.territory = TERRITORY_EXPORT;
   }
   else if (option.country == 3) /* JAPAN */
   {
-	  sms.display = DISPLAY_NTSC;
-	  sms.territory = TERRITORY_DOMESTIC;
+    sms.display = DISPLAY_NTSC;
+    sms.territory = TERRITORY_DOMESTIC;
   }
 
   /* Overscan emulation (OFF by default for GG emulation) */

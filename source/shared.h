@@ -41,7 +41,6 @@
 #include "system.h"
 #include "error.h"
 #include "loadrom.h"
-#include "unzip.h"
 #include "config.h"
 #include "state.h"
 
