@@ -334,7 +334,6 @@ int load_rom (char *filename)
   cart.rom = &smsrom[0];
   cart.size = smsromsize;
   if (cart.size < 0x4000) cart.size = 0x4000;
-
 #else
   if(cart.rom)
   {

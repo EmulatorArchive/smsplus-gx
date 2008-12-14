@@ -352,7 +352,7 @@ void SetScreen ()
 void ClearScreen ()
 {
   whichfb ^= 1;
-  memcpy (xfb[whichfb], &backdrop, 1280 * 480);
+  memcpy (xfb[whichfb], backdrop, 1280 * 480);
   back_framewidth = 440;
 }
 
