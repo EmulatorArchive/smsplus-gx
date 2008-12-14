@@ -1,7 +1,7 @@
 /*
  *  filemem.c
  *
- *  FAT and Memory Card SRAM/Savestate files managment
+ *  FAT and Memory Card Savestate files managment
  *
  *  code by Softdev (2006), Eke-Eke (2007,2008)
  *
@@ -30,8 +30,6 @@
 #include "dvd.h"
 #endif
 
-#include <sys/dir.h>
-
 /* Support for MemCards */
 /**
  * libOGC System Work Area
@@ -47,6 +45,7 @@ static card_stat CardStatus;
  * 64k SRAM + 2k Icon
  */
 static u8 savebuffer[0x12000] ATTRIBUTE_ALIGN (32);
+char rom_filename[MAXJOLIET];
 
 int ManageState (u8 direction, u8 device);
 
