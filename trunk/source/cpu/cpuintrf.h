@@ -8,10 +8,10 @@
 enum
 {
   /* line states */
-  CLEAR_LINE = 0,        /* clear (a fired, held or pulsed) line */
+  CLEAR_LINE = 0,     /* clear (a fired, held or pulsed) line */
   ASSERT_LINE,        /* assert an interrupt immediately */
   HOLD_LINE,          /* hold interrupt line until acknowledged */
-  PULSE_LINE,          /* pulse interrupt line for one instruction */
+  PULSE_LINE,         /* pulse interrupt line for one instruction */
 
   /* internal flags (not for use by drivers!) */
   INTERNAL_CLEAR_LINE = 100 + CLEAR_LINE,

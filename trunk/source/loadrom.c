@@ -228,10 +228,15 @@ rominfo_t game_list[83] =
 
 };
 
+static int old_overscan;
+static int old_console;
+
 void set_config()
 {
   int i;
-  
+
+  old_console = sms.console;
+
   /* default sms settings */
   cart.mapper = MAPPER_SEGA;
   sms.console = CONSOLE_SMS2;
@@ -322,9 +327,19 @@ void set_config()
     sms.territory = TERRITORY_DOMESTIC;
   }
 
+  /* keep old setting */
+  if (old_console != sms.console) old_overscan = option.overscan;
+
   /* Overscan emulation (OFF by default for GG emulation) */
-  if (sms.console == CONSOLE_GG) option.overscan = 0;
-  else if (option.aspect) option.overscan = 1;
+  if (sms.console == CONSOLE_GG)
+  {
+    /* set overscan emulation OFF by default */
+    option.overscan = 0;
+  }
+  else 
+  {
+    option.overscan = old_overscan;
+  }
 }
 
 int load_rom (char *filename)
