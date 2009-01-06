@@ -44,6 +44,9 @@ void Power_Off(void)
 }
 #endif
 
+void system_manage_sram(uint8 *sram, int slot, int mode)
+{
+}
 
 /***************************************************************************
  * SMS Plus Virtual Machine

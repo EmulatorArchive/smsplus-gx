@@ -89,13 +89,13 @@ void vdp_reset(void)
   /* reset VDP registers (normally set by BIOS) */
   if (bios.enabled != 3)
   {
-    vdp.reg[0] = 0x36; 
-    vdp.reg[1] = 0x80; 
-    vdp.reg[2] = 0xFF;
-    vdp.reg[3] = 0xFF;
-    vdp.reg[4] = 0xFF;
-    vdp.reg[5] = 0xFF;
-    vdp.reg[6] = 0xFB;
+    vdp.reg[0]  = 0x36; 
+    vdp.reg[1]  = 0x80; 
+    vdp.reg[2]  = 0xFF;
+    vdp.reg[3]  = 0xFF;
+    vdp.reg[4]  = 0xFF;
+    vdp.reg[5]  = 0xFF;
+    vdp.reg[6]  = 0xFB;
     vdp.reg[10] = 0xFF;
   }
 

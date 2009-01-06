@@ -190,9 +190,9 @@ int z80_ICount;
 Z80_Regs Z80;
 static UINT32 EA;
 
-static UINT8 SZ[256];    /* zero and sign flags */
-static UINT8 SZ_BIT[256];  /* zero, sign and parity/overflow (=zero) flags for BIT opcode */
-static UINT8 SZP[256];    /* zero, sign and parity flags */
+static UINT8 SZ[256];       /* zero and sign flags */
+static UINT8 SZ_BIT[256];   /* zero, sign and parity/overflow (=zero) flags for BIT opcode */
+static UINT8 SZP[256];      /* zero, sign and parity flags */
 static UINT8 SZHV_inc[256]; /* zero, sign, half carry and overflow flags INC r8 */
 static UINT8 SZHV_dec[256]; /* zero, sign, half carry and overflow flags DEC r8 */
 
@@ -449,11 +449,11 @@ INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
 /***************************************************************
  * execute an opcode
  ***************************************************************/
-#define EXEC(prefix,opcode)                   \
+#define EXEC(prefix,opcode)      \
 {                                \
-  unsigned op = opcode;                    \
-  (*Z80##prefix[op])();                    \
-  CC(prefix,op);                        \
+  unsigned op = opcode;          \
+  (*Z80##prefix[op])();          \
+  CC(prefix,op);                 \
 }
 
 #if BIG_SWITCH

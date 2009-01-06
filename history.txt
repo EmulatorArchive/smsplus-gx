@@ -2,6 +2,11 @@
 SMSPLUS for GC/wii:
 ---------------------
 
+
+- adjusted SN76489 output volume to real SMS2 levels
+- improved Z80 execution accuracy: fixes sky flickering in Shadow of the Beast
+
+
 14/12/2008:
 -----------
 [NGC/Wii]

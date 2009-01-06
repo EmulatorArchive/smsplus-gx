@@ -35,6 +35,8 @@ void system_frame(int skip_render)
 {
   int lpf = sms.display ? 313 : 262;
   int iline;
+  int line_z80 = 0;
+  int count_z80 = 0;
 
   /* Debounce pause key */
   if(input.system & INPUT_PAUSE)
@@ -62,14 +64,14 @@ void system_frame(int skip_render)
 
   for(vdp.line = 0; vdp.line < lpf;)
   {
-    z80_execute(CYCLES_PER_LINE);
-
     iline = iline_table[vdp.extended];
 
     if(!skip_render)
     {
       render_line(vdp.line);
     }
+
+    line_z80 += CYCLES_PER_LINE;
 
     if(vdp.line <= iline)
     {
@@ -79,7 +81,7 @@ void system_frame(int skip_render)
         vdp.left = vdp.reg[0x0A];
         vdp.hint_pending = 1;
 
-        z80_execute(16);
+        count_z80 += z80_execute(16);
 
         if(vdp.reg[0x00] & 0x10)
         {
@@ -97,13 +99,15 @@ void system_frame(int skip_render)
       vdp.status |= 0x80;
       vdp.vint_pending = 1;
 
-      z80_execute(16);
+      count_z80 += z80_execute(16);
 
       if(vdp.reg[0x01] & 0x20)
       {
         z80_set_irq_line(0, ASSERT_LINE);
       }
     }
+
+    count_z80 += z80_execute(line_z80 - count_z80);
 
     sound_update(vdp.line);
 
@@ -143,9 +147,6 @@ void system_reset(void)
   system_manage_sram(cart.sram, SLOT_CART, SRAM_LOAD);
 }
 
-void system_manage_sram(uint8 *sram, int slot, int mode)
-{
-}
 
 void system_poweron(void)
 {
