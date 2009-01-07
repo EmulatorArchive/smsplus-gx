@@ -22,6 +22,8 @@
 
 #include "shared.h"
 
+#define gamecount 84
+
 typedef struct
 {
   uint32 crc;
@@ -34,8 +36,7 @@ typedef struct
   char *name;
 } rominfo_t;
 
-int gamecount = 83;
-rominfo_t game_list[83] =
+rominfo_t game_list[gamecount] =
 {
   /* games that require CODEMASTER mapper */
   {0x29822980, 0, DEVICE_PAD2B, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
@@ -187,6 +188,8 @@ rominfo_t game_list[83] =
    "Hang-On / Safari Hunt"},
   {0xc5083000, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Hang-On / Safari Hunt [BAD DUMP]"},
+  {0x91e93385, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
+   "Hang-On / Safari Hunt [BIOS]"},
   {0xe8ea842c, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Marksman Shooting / Trap Shooting"},
   {0xe8215c2e, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
@@ -277,9 +280,9 @@ void set_config()
     }
   }
 
-  /* retrieve game settings from database */
+  sms.gun_offset = 20; /* default offset */
 
-  error("CRC = 0x%x\n", cart.crc);
+  /* retrieve game settings from database */
   for (i = 0; i < gamecount; i++)
   {
     if (cart.crc == game_list[i].crc)
@@ -292,15 +295,11 @@ void set_config()
       sms.device[0] = game_list[i].device;
       sms.device[1] = game_list[i].device;
 
-      if (sms.device[0] == DEVICE_LIGHTGUN)
+      if ((strcmp(game_list[i].name, "Spacegun") == 0) ||
+          (strcmp(game_list[i].name, "Gangster Town") == 0))
       {
-        if ((strcmp(game_list[i].name, "Spacegun") == 0) ||
-            (strcmp(game_list[i].name, "Gangster Town") == 0))
-        {
-          /* these games seem to use different gun position calculation method */
-          sms.gun_offset = 16;
-        }
-        else sms.gun_offset = 20; /* default offset */
+        /* these games seem to use different gun position calculation method */
+        sms.gun_offset = 16;
       }
     }
   }
