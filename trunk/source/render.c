@@ -53,6 +53,34 @@ uint8 bg_pattern_cache[0x20000];/* Cached and flipped patterns */
 /* Pixel look-up table */
 uint8 lut[0x10000];
 
+static const uint8 tms_crom[] =
+{
+  0x00, 0x00, 0x08, 0x0C,
+  0x10, 0x30, 0x01, 0x3C,
+  0x02, 0x03, 0x05, 0x0F,
+  0x04, 0x33, 0x15, 0x3F
+};
+
+static const uint8 tms_palette[16][3] =
+{
+  {  0,  0,  0},  /* Transparent */
+  {  0,  0,  0},  /* Black */
+  { 33,200, 66},  /* Medium green */
+  { 94,220,120},  /* Light green */
+  { 84, 85,237},  /* Dark blue */
+  {125,118,252},  /* Light blue */
+  {212, 82, 77},  /* Dark red */
+  { 66,235,245},  /* Cyan */
+  {252, 85, 84},  /* Medium red */
+  {255,121,120},  /* Light red */
+  {212,193, 84},  /* Dark yellow */
+  {230,206,128},  /* Light yellow */
+  { 33,176, 59},  /* Dark green */
+  {201, 91,186},  /* Magenta */
+  {204,204,204},  /* Gray */
+  {255,255,255}   /* White */
+};
+
 /* Attribute expansion table */
 static const uint32 atex[4] =
 {
@@ -240,7 +268,7 @@ void render_reset(void)
   /* Clear palette */
   for(i = 0; i < PALETTE_SIZE; i++)
   {
-    palette_sync(i, 1);
+    palette_sync(i);
   }
 
   /* Invalidate pattern cache */
@@ -249,9 +277,18 @@ void render_reset(void)
   bg_list_index = 0;
   memset(bg_pattern_cache, 0, sizeof(bg_pattern_cache));
 
-  /* Pick render routine */
-  render_bg = render_bg_sms;
-  render_obj = render_obj_sms;
+  /* Pick default render routine */
+  if (vdp.reg[0] & 4)
+  {
+    render_bg = render_bg_sms;
+    render_obj = render_obj_sms;
+  }
+  else
+  {
+    render_bg = render_bg_tms;
+    render_obj = render_obj_tms;
+  }
+
 }
 
 
@@ -340,7 +377,7 @@ void render_bg_sms(int line)
 {
   int locked = 0;
   int yscroll_mask = (vdp.extended) ? 256 : 224;
-  int v_line = (line + vdp.reg[9]) % yscroll_mask;
+  int v_line = (line + vdp.vscroll) % yscroll_mask;
   int v_row  = (v_line & 7) << 3;
   int hscroll = ((vdp.reg[0] & 0x40) && (line < 0x10)) ? 0 : (0x100 - vdp.reg[8]);
   int column = 0;
@@ -609,32 +646,45 @@ void update_bg_pattern_cache(void)
 
 
 /* Update a palette entry */
-void palette_sync(int index, int force)
+void palette_sync(int index)
 {
   int r, g, b;
 
-  // unless we are forcing an update,
-  // if not in mode 4, exit
-  if(IS_SMS && !force && ((vdp.reg[0] & 4) == 0) )
-    return;
-
-  if(sms.console == CONSOLE_GG)
+  /* VDP Mode */
+  if (vdp.reg[0] & 4)
   {
-    /* ----BBBBGGGGRRRR */
-    r = (vdp.cram[(index << 1) | (0)] >> 0) & 0x0F;
-    g = (vdp.cram[(index << 1) | (0)] >> 4) & 0x0F;
-    b = (vdp.cram[(index << 1) | (1)] >> 0) & 0x0F;
+    /* Mode 4 */
+    if(sms.console == CONSOLE_GG)
+    {
+      /* SMS palette */
+      /* ----BBBBGGGGRRRR */
+      r = (vdp.cram[(index << 1) | (0)] >> 0) & 0x0F;
+      g = (vdp.cram[(index << 1) | (0)] >> 4) & 0x0F;
+      b = (vdp.cram[(index << 1) | (1)] >> 0) & 0x0F;
 
-    r = gg_cram_expand_table[r];
-    g = gg_cram_expand_table[g];
-    b = gg_cram_expand_table[b];
+      r = gg_cram_expand_table[r];
+      g = gg_cram_expand_table[g];
+      b = gg_cram_expand_table[b];
+    }
+    else
+    {
+      /* GG palette */
+      /* --BBGGRR */
+      r = (vdp.cram[index] >> 0) & 3;
+      g = (vdp.cram[index] >> 2) & 3;
+      b = (vdp.cram[index] >> 4) & 3;
+
+      r = sms_cram_expand_table[r];
+      g = sms_cram_expand_table[g];
+      b = sms_cram_expand_table[b];
+    }
   }
   else
   {
-    /* --BBGGRR */
-    r = (vdp.cram[index] >> 0) & 3;
-    g = (vdp.cram[index] >> 2) & 3;
-    b = (vdp.cram[index] >> 4) & 3;
+    /* TMS9918 palette */
+    r = (tms_crom[index & 0x0F] >> 0) & 3;
+    g = (tms_crom[index & 0x0F] >> 2) & 3;
+    b = (tms_crom[index & 0x0F] >> 4) & 3;
 
     r = sms_cram_expand_table[r];
     g = sms_cram_expand_table[g];

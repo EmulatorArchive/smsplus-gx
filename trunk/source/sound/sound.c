@@ -120,6 +120,7 @@ int sound_init(void)
 
   /* Set up SN76489 emulation */
   SN76489_Init(0, snd.psg_clock, snd.sample_rate);
+  SN76489_Config(0, MUTE_ALLON, BOOST_ON, VOL_TRUNC, (sms.console < CONSOLE_SMS) ? FB_SC3000 : FB_SEGAVDP);
 
   /* Set up YM2413 emulation */
   FM_Init();

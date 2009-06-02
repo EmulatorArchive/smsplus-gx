@@ -304,11 +304,20 @@ void set_config()
     }
   }
 
+  /* reinit bios */
+  if (IS_SMS) bios.enabled |= (option.use_bios & 1);
+  else bios.enabled &= ~1;
+
   /* force settings if AUTO is not set*/
   if (option.console == 1) sms.console = CONSOLE_SMS;
   else if (option.console == 2) sms.console = CONSOLE_SMS2;
   else if (option.console == 3) sms.console = CONSOLE_GG;
   else if (option.console == 4) sms.console = CONSOLE_GGMS;
+  else if (option.console == 5)
+  {
+    sms.console = CONSOLE_SG1000;
+    cart.mapper = MAPPER_NONE;
+  }
 
   if (option.country == 1) /* USA */
   {
