@@ -60,7 +60,13 @@ void system_frame(int skip_render)
   if(vdp.mode <= 7) parse_line(0);
 
   /* 3D glasses faking */
-  if (sms.glasses_3d) skip_render = (sms.wram[0x1ffb] == 0) ? 1 : 0;
+  if (sms.glasses_3d) skip_render = sms.wram[0x1ffb];
+
+  /* VDP register 9 is latched during VBLANK */
+  vdp.vscroll = vdp.reg[9];
+
+  /* reset Horizontal counter */
+  vdp.left = vdp.reg[0x0A];
 
   for(vdp.line = 0; vdp.line < lpf;)
   {
@@ -73,36 +79,29 @@ void system_frame(int skip_render)
 
     line_z80 += CYCLES_PER_LINE;
 
-    if(vdp.line <= iline)
+    if (sms.console >= CONSOLE_SMS)
     {
-      vdp.left -= 1;
-      if(vdp.left == -1)
+      if(vdp.line <= iline)
       {
-        vdp.left = vdp.reg[0x0A];
-        vdp.hint_pending = 1;
-
-        count_z80 += z80_execute(16);
-
-        if(vdp.reg[0x00] & 0x10)
+        if(--vdp.left < 0)
         {
-          z80_set_irq_line(0, ASSERT_LINE);
+          vdp.left = vdp.reg[0x0A];
+          vdp.hint_pending = 1;
+          if(vdp.reg[0x00] & 0x10)
+          {
+            z80_set_irq_line(0, ASSERT_LINE);
+          }
         }
       }
-    }
-    else
-    {
-      vdp.left = vdp.reg[0x0A];
     }
 
     if(vdp.line == iline)
     {
       vdp.status |= 0x80;
       vdp.vint_pending = 1;
-
-      count_z80 += z80_execute(16);
-
       if(vdp.reg[0x01] & 0x20)
       {
+        count_z80 += z80_execute(1);
         z80_set_irq_line(0, ASSERT_LINE);
       }
     }

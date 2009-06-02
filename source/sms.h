@@ -31,7 +31,7 @@ enum {
   SLOT_BIOS   = 0,
   SLOT_CARD   = 1,
   SLOT_CART   = 2,
-  SLOT_EXP  = 3
+  SLOT_EXP    = 3
 };
 
 enum {
@@ -58,6 +58,10 @@ enum {
 };
 
 enum {
+  CONSOLE_SG1000  = 0x10,
+  CONSOLE_SC3000  = 0x11,
+  CONSOLE_SF7000  = 0x12,
+
   CONSOLE_SMS     = 0x20,
   CONSOLE_SMS2    = 0x21,
 

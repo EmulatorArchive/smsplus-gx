@@ -88,16 +88,16 @@ int main (int argc, char **argv)
     FILE *fd = fopen("SMS_BIOS.sms", "rb");
     if(fd)
     {
-	    /* Seek to end of file, and get size */
-		  fseek(fd, 0, SEEK_END);
+	  /* Seek to end of file, and get size */
+      fseek(fd, 0, SEEK_END);
       int size = ftell(fd);
       fseek(fd, 0, SEEK_SET);
       if (size < 0x4000) size = 0x4000;
- 	    fread(bios.rom, size, 1, fd);
-		  bios.enabled = 3;  
-  		bios.pages = size / 0x4000;
-	  }
-	  else bios.enabled = 0;
+ 	  fread(bios.rom, size, 1, fd);
+	  bios.enabled = 3;  
+  	  bios.pages = size / 0x4000;
+	}
+	else bios.enabled = 0;
 
     /* Attempt to load game off commandline */
     if(load_rom(game_name) == 0)

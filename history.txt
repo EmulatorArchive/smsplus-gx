@@ -5,7 +5,12 @@ SMSPLUS for GC/wii:
 
 - adjusted SN76489 volume to real SMS2 output
 - improved Z80 execution accuracy: fixes sky flickering in Shadow of the Beast
-- improved Sega Phaser auto-detection: fixes lightgun support in some games
+- improved Sega Phaser autodetection: fixes lightgun support in some games
+- improved mapper emulation
+- fixed Korean BIOS support
+- fixed 3D-Glasses faking initial state
+- added SG-1000 support
+- added SC-3000 & SF-7000 preliminar support (no keyboard) 
 
 
 14/12/2008:

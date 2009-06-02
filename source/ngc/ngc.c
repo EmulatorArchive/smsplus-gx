@@ -149,13 +149,6 @@ int main (int argc, char *argv[])
   if (fatInitDefault() == true)
   {
     fat_enabled = 1;
-#ifdef HW_RVL
-    fatEnableReadAhead ("sd", 6, 64);
-    fatEnableReadAhead ("usb", 6, 64);
-#else
-    fatEnableReadAhead ("carda", 6, 64);
-    fatEnableReadAhead ("cardb", 6, 64);
-#endif
   }
 
   /* Default Config */

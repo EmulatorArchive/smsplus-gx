@@ -265,9 +265,9 @@ void dispmenu ()
     else if (option.ntsc == 3) sprintf (items[4], "NTSC Filter: RGB");
     else sprintf (items[4], "NTSC Filter: OFF");
     sprintf (items[5], "Borders: %s", option.overscan ? " ON" : "OFF");
-    if (option.palette == 0) sprintf (items[6], "Palette: ORIGINAL");
-    else if (option.palette == 1) sprintf (items[6], "Palette:  NORMAL");
-    else if (option.palette == 2) sprintf (items[6], "Palette:  BRIGHT");
+    if (option.palette == 0) sprintf (items[6], "SMS Palette: ORIGINAL");
+    else if (option.palette == 1) sprintf (items[6], "SMS Palette:  NORMAL");
+    else if (option.palette == 2) sprintf (items[6], "SMS Palette:  BRIGHT");
     sprintf (items[7], "Center X: %s%02d",option. xshift < 0 ? "-":"+", abs(option.xshift));
     sprintf (items[8], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
     sprintf (items[9], "Scale  X:  %02d", option.xscale);
@@ -342,7 +342,7 @@ void dispmenu ()
           sms_cram_expand_table[3] = (31 << 3) + (1 << 2);
         }
 
-        for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i, 1);
+        for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
         break;
 
       case 7:  /*** Center X ***/
@@ -419,10 +419,11 @@ void sysmenu ()
     else if (option.console == 2) sprintf (miscmenu[2], "Console -   SMS2");
     else if (option.console == 3) sprintf (miscmenu[2], "Console -     GG");
     else if (option.console == 4) sprintf (miscmenu[2], "Console - GG-SMS");
+    else if (option.console == 5) sprintf (miscmenu[2], "Console - SG1000");
     else sprintf (miscmenu[2], "Console -   AUTO");
         
     sprintf (miscmenu[3], "Sprite Limit: %s", option.spritelimit ? " ON" : "OFF");
-    sprintf (miscmenu[4], "Use BIOS: %s", option.use_bios ? " ON" : "OFF");
+    sprintf (miscmenu[4], "SMS BIOS: %s", option.use_bios ? " ON" : "OFF");
     sprintf (miscmenu[5], "GG Extra: %s", option.extra_gg ? " ON" : "OFF");
 
     if (option.autofreeze == 0) sprintf (miscmenu[6], "Auto FREEZE: FAT");
@@ -463,7 +464,7 @@ void sysmenu ()
 
       case 2:  /*** Console Type ***/
         option.console ++;
-        if (option.console > 4) option.console = 0;
+        if (option.console > 5) option.console = 0;
         set_config();
         system_init();
         break;

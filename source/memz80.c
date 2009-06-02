@@ -50,55 +50,50 @@ void memctrl_w(uint8 data)
       bios.enabled |= 2;
       if (option.use_bios) bios.enabled |= 1;
       memcpy(bios.rom, cart.rom, cart.size);
+      memcpy(bios.fcr, cart.fcr, 4);
       bios.pages = cart.pages;
       cart.loaded = 0;
     }
 
+    /* disables CART & BIOS by default */
+    slot.rom = NULL;
+    slot.mapper = MAPPER_NONE;
+
     switch (data & 0x48)
     {
-      case 0x00:
-      case 0x08:
-        /* enables CART */
-        if (cart.loaded) slot.rom = cart.rom;
-        else slot.rom = NULL;
-        slot.pages = cart.pages;
-        slot.mapper = cart.mapper;
-        slot.fcr = &cart.fcr[0];
-
-        /* reset CART mapping */
-        if ((data & 0x40) != (sms.memctrl & 0x40))
+      case 0x00:  /* BIOS & CART enabled */
+      case 0x08:  /* BIOS disabled, CART enabled */
+        if (cart.loaded)
         {
-          cart.fcr[0] = 0x00;
-          cart.fcr[1] = 0x00;
-          cart.fcr[2] = 0x01;
-          cart.fcr[3] = 0x00;
+          slot.rom    = cart.rom;
+          slot.pages  = cart.pages;
+          slot.mapper = cart.mapper;
+          slot.fcr    = &cart.fcr[0];
         }
         break;
       
-      case 0x40:
-        /* enables BIOS */
-        slot.rom   = bios.rom;
-        slot.pages = bios.pages;
+      case 0x40:  /* BIOS enabled, CART disabled */
+        slot.rom    = bios.rom;
+        slot.pages  = bios.pages;
         slot.mapper = MAPPER_SEGA;
-        slot.fcr = &cart.fcr[0];
+        slot.fcr    = &bios.fcr[0];
         break;
       
       default:
-        /* disables CART & BIOS */
-        slot.rom   = NULL;
         break;
     }
-    
+
+    mapper_reset();
+
     /* reset SLOT mapping */
     if (slot.rom)
     {
-      mapper_reset();
-      cpu_readmap[0]  = slot.rom ? &slot.rom[0] : dummy_read;
+      cpu_readmap[0]  = &slot.rom[0];
       cpu_writemap[0] = dummy_write;
-      sms_mapper_w(3, slot.fcr[3]);
-      sms_mapper_w(2, slot.fcr[2]);
-      sms_mapper_w(1, slot.fcr[1]);
-      sms_mapper_w(0, slot.fcr[0]);
+      sms_mapper_w(0,slot.fcr[0]);
+      sms_mapper_w(1,slot.fcr[1]);
+      sms_mapper_w(2,slot.fcr[2]);
+      sms_mapper_w(3,slot.fcr[3]);
     }
     else
     {
@@ -111,11 +106,12 @@ void memctrl_w(uint8 data)
     }
   }
 
+  /* update register value */
   sms.memctrl = data;  
 }
 
 /*--------------------------------------------------------------------------*/
-/* Sega Master System port handlers           */
+/* Sega Master System port handlers                                         */
 /*--------------------------------------------------------------------------*/
 void sms_port_w(uint16 port, uint8 data)
 {
@@ -170,9 +166,9 @@ uint8 sms_port_r(uint16 port)
 {
   port &= 0xFF;
 
-  /* IO port disabled: access FM unit (fixed) */
-  if((port == 0xF2) /*&& (sms.memctrl & 4)*/)
-  return fmunit_detect_r();
+  /* FM unit (some games do not disable I/O chip) */
+  if (port == 0xF2)
+    return fmunit_detect_r();
 
   switch(port & 0xC0)
   {
@@ -194,7 +190,7 @@ uint8 sms_port_r(uint16 port)
 }
 
 /*--------------------------------------------------------------------------*/
-/* Game Gear port handlers              */
+/* Game Gear port handlers                                                  */
 /*--------------------------------------------------------------------------*/
 
 void gg_port_w(uint16 port, uint8 data)
@@ -264,7 +260,7 @@ uint8 gg_port_r(uint16 port)
 }
 
 /*--------------------------------------------------------------------------*/
-/* Game Gear (MS) port handlers             */
+/* Game Gear (MS) port handlers                                             */
 /*--------------------------------------------------------------------------*/
 
 void ggms_port_w(uint16 port, uint8 data)
@@ -325,7 +321,7 @@ uint8 ggms_port_r(uint16 port)
 }
 
 /*--------------------------------------------------------------------------*/
-/* MegaDrive / Genesis port handlers          */
+/* MegaDrive / Genesis port handlers                                        */
 /*--------------------------------------------------------------------------*/
 
 void md_port_w(uint16 port, uint8 data)
@@ -382,3 +378,53 @@ uint8 md_port_r(uint16 port)
   return -1;
 }
 
+/*--------------------------------------------------------------------------*/
+/* SG1000,SC3000,SF7000 port handlers                                       */
+/*--------------------------------------------------------------------------*/
+
+void tms_port_w(uint16 port, uint8 data)
+{
+  switch(port & 0xC1)
+  {
+    case 0x00:
+      /* No memory control register */
+      return;
+
+    case 0x01:
+      pio_ctrl_w(data);
+      return;
+
+    case 0x40:
+    case 0x41:
+      psg_write(data);
+      return;
+
+    case 0x80:
+    case 0x81:
+      tms_write(port, data);
+      return;
+  }
+}
+
+uint8 tms_port_r(uint16 port)
+{
+  port &= 0xFF;
+
+  switch(port & 0xC0)
+  {
+    case 0x00:
+      return z80_read_unmapped();
+
+    case 0x40:
+      return vdp_counter_r(port);
+
+    case 0x80:
+      return vdp_read(port);
+
+    case 0xC0:
+      return pio_port_r(port);
+  }
+
+  /* Just to please the compiler */
+  return -1;
+}

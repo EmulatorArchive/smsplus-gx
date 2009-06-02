@@ -30,7 +30,6 @@ typedef struct
   int overscan;
 } t_option;
 
-
 /* Global data */
 t_option option;
 

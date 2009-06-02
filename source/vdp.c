@@ -25,14 +25,6 @@
 #include "shared.h"
 #include "hvc.h"
 
-static const uint8 tms_crom[] =
-{
-  0x00, 0x00, 0x08, 0x0C,
-  0x10, 0x30, 0x01, 0x3C,
-  0x02, 0x03, 0x05, 0x0F,
-  0x04, 0x33, 0x15, 0x3F
-};
-
 /* Mark a pattern as dirty */
 #define MARK_BG_DIRTY(addr)                         \
 {                                                   \
@@ -86,8 +78,8 @@ void vdp_reset(void)
   /* reset VDP structure */
   memset(&vdp, 0, sizeof(vdp_t));
 
-  /* reset VDP registers (normally set by BIOS) */
-  if (bios.enabled != 3)
+  /* VDP registers default values (as set by SMS BIOS) */
+  if (IS_SMS && (bios.enabled != 3))
   {
     vdp.reg[0]  = 0x36; 
     vdp.reg[1]  = 0x80; 
@@ -99,8 +91,17 @@ void vdp_reset(void)
     vdp.reg[10] = 0xFF;
   }
 
-  /* reset viewport */
+  /* reset VDP viewport */
   viewport_check();
+
+  /* reset VDP internals */
+  vdp.ct    = (vdp.reg[3] <<  6) & 0x3FC0;
+  vdp.pg    = (vdp.reg[4] << 11) & 0x3800;
+  vdp.satb  = (vdp.reg[5] << 7) & 0x3F00;
+  vdp.sa    = (vdp.reg[5] <<  7) & 0x3F80;
+  vdp.sg    = (vdp.reg[6] << 11) & 0x3800;
+  vdp.bd    = (vdp.reg[7] & 0x0F);
+
   bitmap.viewport.changed = 1;
 }
 
@@ -180,47 +181,25 @@ void viewport_check(void)
   /* check if this is switching in/out of tms */
   if (IS_SMS)
   {
-    if(vdp.mode & 8)
+    /* Restore palette */
+    for(i = 0; i < PALETTE_SIZE; i++)
     {
-      /* Restore SMS palette */
-      for(i = 0; i < PALETTE_SIZE; i++)
-      {
-        palette_sync(i, 1);
-      }
-    }
-    else
-    {
-      /* Load TMS9918 palette */
-      for(i = 0; i < PALETTE_SIZE; i++)
-      {
-        int r = (tms_crom[i & 0x0F] >> 0) & 3;
-        int g = (tms_crom[i & 0x0F] >> 2) & 3;
-        int b = (tms_crom[i & 0x0F] >> 4) & 3;
-        
-        r = sms_cram_expand_table[r];
-        g = sms_cram_expand_table[g];
-        b = sms_cram_expand_table[b];
-            
-#ifndef NGC
-        bitmap.pal.color[i][0] = r;
-        bitmap.pal.color[i][1] = g;
-        bitmap.pal.color[i][2] = b;
-        bitmap.pal.dirty[i] = 1;
-        bitmap.pal.update = 1;
-#endif
-        pixel[i] = MAKE_PIXEL(r, g, b);
-      }
+      palette_sync(i);
     }
   }
 
   vdp.pn = (vdp.reg[2] << 10) & 0x3C00;
-  vdp.ct = (vdp.reg[3] <<  6) & 0x3FC0;
-  vdp.pg = (vdp.reg[4] << 11) & 0x3800;
-  vdp.sa = (vdp.reg[5] <<  7) & 0x3F80;
-  vdp.sg = (vdp.reg[6] << 11) & 0x3800;
 
-  render_bg  = (vdp.mode & 8) ? render_bg_sms  : render_bg_tms;
-  render_obj = (vdp.mode & 8) ? render_obj_sms : render_obj_tms;
+  if (vdp.mode & 8)
+  {
+    render_bg  = render_bg_sms;
+    render_obj = render_obj_sms;
+  }
+  else
+  {
+    render_bg  = render_bg_tms;
+    render_obj = render_obj_tms;
+  }
 }
 
 
@@ -232,6 +211,7 @@ void vdp_reg_w(uint8 r, uint8 d)
   switch(r)
   {
     case 0x00: /* Mode Control No. 1 */
+
       if(vdp.hint_pending)
       {
         if(d & 0x10) z80_set_irq_line(0, ASSERT_LINE);
@@ -306,7 +286,7 @@ void vdp_write(int offset, uint8 data)
           if(data != vdp.cram[index])
           {
             vdp.cram[index] = data;
-            palette_sync(index, 0);
+            palette_sync(index);
           }
           vdp.buffer = data;
           break;
@@ -419,7 +399,7 @@ void gg_vdp_write(int offset, uint8 data)
             vdp.cram_latch = (vdp.cram_latch & 0x00FF) | ((data & 0xFF) << 8);
             vdp.cram[(vdp.addr & 0x3E) | (0)] = (vdp.cram_latch >> 0) & 0xFF;
             vdp.cram[(vdp.addr & 0x3E) | (1)] = (vdp.cram_latch >> 8) & 0xFF;
-            palette_sync((vdp.addr >> 1) & 0x1F, 0);
+            palette_sync((vdp.addr >> 1) & 0x1F);
           }
           else
           {
@@ -493,7 +473,7 @@ void md_vdp_write(int offset, uint8 data)
           if(data != vdp.cram[index])
           {
             vdp.cram[index] = data;
-            palette_sync(index, 0);
+            palette_sync(index);
           }
           break;
       }

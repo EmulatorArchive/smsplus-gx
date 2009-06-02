@@ -153,23 +153,10 @@ void system_load_state(void *mem)
   slot.mapper = cart.mapper;
   slot.fcr = &cart.fcr[0];
   mapper_reset();
-
-  for(i = 0x00; i <= 0x2F; i++)
-  {
-    cpu_readmap[i]  = &cart.rom[(i & 0x1F) << 10];
-    cpu_writemap[i] = dummy_write;
-  }
-
-  for(i = 0x30; i <= 0x3F; i++)
-  {
-    cpu_readmap[i] = &sms.wram[(i & 0x07) << 10];
-    cpu_writemap[i] = &sms.wram[(i & 0x07) << 10];
-  }
-
-  sms_mapper_w(3, cart.fcr[3]);
-  sms_mapper_w(2, cart.fcr[2]);
-  sms_mapper_w(1, cart.fcr[1]);
   sms_mapper_w(0, cart.fcr[0]);
+  sms_mapper_w(1, cart.fcr[1]);
+  sms_mapper_w(2, cart.fcr[2]);
+  sms_mapper_w(3, cart.fcr[3]);
 
   /* Force full pattern cache update */
   bg_list_index = 0x200;
@@ -180,5 +167,5 @@ void system_load_state(void *mem)
   }
 
   /* Restore palette */
-  for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i, 1);
+  for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
 }
