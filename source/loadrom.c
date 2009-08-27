@@ -109,7 +109,7 @@ rominfo_t game_list[gamecount] =
   {0x85cfc9c9, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Taito Chase H.Q."},  
 
-  /* games requiring SMS1 VDP */
+  /* games requiring 315-5124 VDP (Mark-III, Sega Master System) */
   {0x32759751, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS,
    "Y's (J)"},
 
@@ -293,7 +293,7 @@ void set_config()
       sms.glasses_3d = game_list[i].glasses_3d;
       sms.console =  game_list[i].console;
       sms.device[0] = game_list[i].device;
-      sms.device[1] = game_list[i].device;
+      if (game_list[i].device != DEVICE_LIGHTGUN) sms.device[1] = game_list[i].device;
 
       if ((strcmp(game_list[i].name, "Spacegun") == 0) ||
           (strcmp(game_list[i].name, "Gangster Town") == 0))
