@@ -78,6 +78,9 @@ void vdp_reset(void)
   /* reset VDP structure */
   memset(&vdp, 0, sizeof(vdp_t));
 
+  /* number of scanlines */
+  vdp.lpf = sms.display ? 313 : 262;
+
   /* VDP registers default values (as set by SMS BIOS) */
   if (IS_SMS && (bios.enabled != 3))
   {
@@ -205,6 +208,14 @@ void viewport_check(void)
 
 void vdp_reg_w(uint8 r, uint8 d)
 {
+  /* value  written after register latch  */
+  /* Xscroll register, maybe others ?     */
+  if (((z80_get_elapsed_cycles() + 1) / CYCLES_PER_LINE) > vdp.line)
+  {
+    /* render next line now BEFORE updating register */
+    render_line((vdp.line+1)%vdp.lpf);
+  }
+
   /* Store register data */
   vdp.reg[r] = d;
 
@@ -234,24 +245,24 @@ void vdp_reg_w(uint8 r, uint8 d)
       break;
 
     case 0x03:
-      vdp.ct = (vdp.reg[3] <<  6) & 0x3FC0;
+      vdp.ct = (d <<  6) & 0x3FC0;
       break;
 
     case 0x04:
-      vdp.pg = (vdp.reg[4] << 11) & 0x3800;
+      vdp.pg = (d << 11) & 0x3800;
       break;
 
     case 0x05: /* Sprite Attribute Table Base Address */
-      vdp.satb = (vdp.reg[5] << 7) & 0x3F00;
-      vdp.sa = (vdp.reg[5] <<  7) & 0x3F80;
+      vdp.satb = (d << 7) & 0x3F00;
+      vdp.sa = (d <<  7) & 0x3F80;
       break;
 
     case 0x06:
-      vdp.sg = (vdp.reg[6] << 11) & 0x3800;
+      vdp.sg = (d << 11) & 0x3800;
       break;
 
     case 0x07:
-      vdp.bd = (vdp.reg[7] & 0x0F);
+      vdp.bd = (d & 0x0F);
       break;
   }
 }
@@ -338,13 +349,40 @@ uint8 vdp_read(int offset)
       return temp;
 
     case 1: /* Status flags */
+    {
+      /* cycle-accurate SPR_OVR and INT flags */
+      int cyc   = z80_get_elapsed_cycles();
+      int line  = vdp.line;
+      if ((cyc / CYCLES_PER_LINE) > line)
+      {
+        if (line == vdp.height) vdp.status |= 0x80;
+        line = (line + 1)%vdp.lpf;
+        render_line(line);
+      }
+
       temp = vdp.status;
-      vdp.pending = 0;
+
+      /* clear flags */
       vdp.status = 0;
+      vdp.pending = 0;
       vdp.vint_pending = 0;
       vdp.hint_pending = 0;
       z80_set_irq_line(0, CLEAR_LINE);
+
+      /* cycle-accurate SPR_COL flag */
+      if (temp & 0x20)
+      {
+        uint8 hc = hc_256[(cyc + 1) % CYCLES_PER_LINE];
+        error("SPR COllision: line=%d, hc=0x%02x(0x%02x)\n", vdp.spr_col >> 8,vdp.spr_col & 0xff, hc);
+        if ((line == (vdp.spr_col >> 8)) && ((hc < (vdp.spr_col & 0xff)) || (hc > 0xf3)))
+        {
+          vdp.status |= 0x20;
+          temp &= ~0x20;
+        }
+      }
+
       return temp;
+    }
   }
 
   /* Just to please the compiler */
@@ -356,7 +394,7 @@ uint8 vdp_counter_r(int offset)
   switch(offset & 1)
   {
     case 0: /* V Counter */
-      return vc_table[sms.display][vdp.extended][vdp.line & 0x1FF];
+      return vc_table[sms.display][vdp.extended][z80_get_elapsed_cycles() / CYCLES_PER_LINE];
 
     case 1: /* H Counter -- return previously latched values or ZERO */
       return sms.hlatch;
@@ -395,7 +433,7 @@ void gg_vdp_write(int offset, uint8 data)
     
         case 3: /* CRAM write */
           if(vdp.addr & 1)
-          {          
+          {
             vdp.cram_latch = (vdp.cram_latch & 0x00FF) | ((data & 0xFF) << 8);
             vdp.cram[(vdp.addr & 0x3E) | (0)] = (vdp.cram_latch >> 0) & 0xFF;
             vdp.cram[(vdp.addr & 0x3E) | (1)] = (vdp.cram_latch >> 8) & 0xFF;

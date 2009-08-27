@@ -1,6 +1,14 @@
 #ifndef _SHARED_H_
 #define _SHARED_H_
 
+typedef unsigned char uint8;
+typedef unsigned short int uint16;
+typedef unsigned long int uint32;
+
+typedef signed char int8;
+typedef signed short int int16;
+typedef signed long int int32;
+
 #ifdef NGC
 #include "osd.h"
 #endif
@@ -25,7 +33,6 @@
 #endif
 #endif
 
-#include "types.h"
 #include "z80.h"
 #include "sms.h"
 #include "pio.h"

@@ -164,7 +164,7 @@ void sms_reset(void)
 
   /* Reset Z80 state */
   z80_reset();
-  z80_set_irq_line (0, ASSERT_LINE);
+  z80_reset_cycle_count();
   z80_set_irq_line (0, CLEAR_LINE);
 
   /* Clear SMS context */
