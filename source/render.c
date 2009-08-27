@@ -317,7 +317,7 @@ void render_line(int line)
   prev_line = line;
 
   /* Viewport Line index (including vertical borders) */
-  int vline  = (line + bitmap.viewport.y - ((vdp.height - bitmap.viewport.h)/2)) % (sms.display ? 313 : 262);
+  int vline  = (line + bitmap.viewport.y - ((vdp.height - bitmap.viewport.h)/2)) % vdp.lpf;
   
   /* Ensure we're within the viewport range */
   if ((vline < 0) || (vline >= ((2 * bitmap.viewport.y) + bitmap.viewport.h))) return;
@@ -340,22 +340,26 @@ void render_line(int line)
   }
   else
   {
-    /* Update pattern cache */
-    update_bg_pattern_cache();
-
-    /* Draw background */
-    render_bg(line);
-
-    /* Draw sprites */
-    render_obj(line);
-
-    /* Blank leftmost column of display */
-    if(vdp.reg[0] & 0x20) memset(linebuf, BACKDROP_COLOR, 8);
-
     /* vertical borders */
     if ((vline < bitmap.viewport.y) || (vline >= bitmap.viewport.h + bitmap.viewport.y))
     {
+      /* sprites are still processed */
+      if (vdp.mode > 7) render_obj(line);
       memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w);
+    }
+    else
+    {
+      /* Update pattern cache */
+      update_bg_pattern_cache();
+
+      /* Draw background */
+      render_bg(line);
+
+      /* Draw sprites */
+      render_obj(line);
+
+      /* Blank leftmost column of display */
+      if(vdp.reg[0] & 0x20) memset(linebuf, BACKDROP_COLOR, 8);
     }
   }
 
@@ -546,7 +550,7 @@ void render_obj_sms(int line)
           linebuf_ptr[x] = lut[(bg << 8) | (sp)];
 
           /* Check sprite collision */
-          if ((bg & 0x40) && !(vdp.status & 0x20))
+          if ((linebuf_ptr[x] & 0x0f) && (bg & 0x40) && !(vdp.status & 0x20))
           {
             /* pixel-accurate SPR_COL flag */
             vdp.status |= 0x20;
@@ -575,7 +579,7 @@ void render_obj_sms(int line)
           linebuf_ptr[x] = lut[(bg << 8) | (sp)];
 
           /* Check sprite collision */
-          if ((bg & 0x40) && !(vdp.status & 0x20))
+          if ((linebuf_ptr[x] & 0x0f) && (bg & 0x40) && !(vdp.status & 0x20))
           {
             /* pixel-accurate SPR_COL flag */
             vdp.status |= 0x20;
