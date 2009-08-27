@@ -139,11 +139,11 @@ extern uint8 dummy_write[0x400];
 extern uint8 dummy_read[0x400];
 
 /* Function prototypes */
-void sms_init(void);
-void sms_reset(void);
-void sms_shutdown(void);
-void mapper_reset(void);
-void sms_mapper_w(int address, int data);
-int sms_irq_callback(int param);
+extern void sms_init(void);
+extern void sms_reset(void);
+extern void sms_shutdown(void);
+extern void mapper_reset(void);
+extern void sms_mapper_w(int address, int data);
+extern int sms_irq_callback(int param);
 
 #endif /* _SMS_H_ */

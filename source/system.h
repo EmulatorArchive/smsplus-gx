@@ -104,13 +104,13 @@ extern cart_t cart;       /* Game cartridge data */
 extern input_t input;     /* Controller input */
 
 /* Function prototypes */
-void system_frame(int skip_render);
-void system_init(void);
-void system_shutdown(void);
-void system_reset(void);
-void system_manage_sram(uint8 *sram, int slot, int mode);
-void system_poweron(void);
-void system_poweroff(void);
+extern void system_frame(int skip_render);
+extern void system_init(void);
+extern void system_shutdown(void);
+extern void system_reset(void);
+extern void system_manage_sram(uint8 *sram, int slot, int mode);
+extern void system_poweron(void);
+extern void system_poweroff(void);
 
 #endif /* _SYSTEM_H_ */
 

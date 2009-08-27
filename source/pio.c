@@ -23,10 +23,17 @@
  ******************************************************************************/
 
 #include "shared.h"
-#include "math.h"
+#include <math.h>
 
-io_state io_lut[2][256];
-io_state *io_current;
+typedef struct {
+  uint8 tr_level[2];  /* TR pin output level */
+  uint8 th_level[2];  /* TH pin output level */
+  uint8 tr_dir[2];    /* TR pin direction */
+  uint8 th_dir[2];    /* TH pin direction */
+} io_state;
+
+static io_state io_lut[2][256];
+static io_state *io_current;
 
 
 /*
@@ -122,14 +129,10 @@ void pio_ctrl_w(uint8 data)
   
   /* HCounter is latched on TH Low->High transition */
   io_current = &io_lut[sms.territory][data];
-  if (((io_current->th_dir[0]   == PIN_DIR_IN) &&
+  if ((io_current->th_dir[0]   == PIN_DIR_IN) &&
        (io_current->th_level[0] == PIN_LVL_HI) &&
        (th_level[0] == PIN_LVL_LO)
-      ) ||
-      ((io_current->th_dir[1]   == PIN_DIR_IN) &&
-      (io_current->th_level[1] == PIN_LVL_HI) &&
-      (th_level[1] == PIN_LVL_LO)
-      ))
+      )
   {
     sms.hlatch = hc_256[z80_get_elapsed_cycles() % CYCLES_PER_LINE];
   }

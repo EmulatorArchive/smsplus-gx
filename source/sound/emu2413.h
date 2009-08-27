@@ -1,8 +1,6 @@
 #ifndef _EMU2413_H_
 #define _EMU2413_H_
 
-#include "types.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

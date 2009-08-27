@@ -55,6 +55,7 @@ typedef struct
     int satb;
     int line;
     int left;
+    uint16 lpf;
     uint8 height;
     uint8 extended;
     uint8 mode;
@@ -62,6 +63,7 @@ typedef struct
     uint8 hint_pending;
     uint16 cram_latch;
     uint8 bd;
+    uint16 spr_col;
 } vdp_t;
 
 /* Global data */
@@ -69,16 +71,16 @@ extern vdp_t vdp;
 extern uint8 hc_256[228];
 
 /* Function prototypes */
-void vdp_init(void);
-void vdp_shutdown(void);
-void vdp_reset(void);
-void viewport_check(void);
-uint8 vdp_counter_r(int offset);
-uint8 vdp_read(int offset);
-void vdp_write(int offset, uint8 data);
-void gg_vdp_write(int offset, uint8 data);
-void md_vdp_write(int offset, uint8 data);
-void tms_write(int offset, int data);
+extern void vdp_init(void);
+extern void vdp_shutdown(void);
+extern void vdp_reset(void);
+extern void viewport_check(void);
+extern uint8 vdp_counter_r(int offset);
+extern uint8 vdp_read(int offset);
+extern void vdp_write(int offset, uint8 data);
+extern void gg_vdp_write(int offset, uint8 data);
+extern void md_vdp_write(int offset, uint8 data);
+extern void tms_write(int offset, int data);
 
 #endif /* _VDP_H_ */
 

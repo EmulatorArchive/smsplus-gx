@@ -57,24 +57,13 @@ enum {
   DEVICE_SPORTSPAD  = 4,  /* Sports Pad controller; analog stick with 2 buttons */
 };
 
-typedef struct {
-  uint8 tr_level[2];  /* TR pin output level */
-  uint8 th_level[2];  /* TH pin output level */
-  uint8 tr_dir[2];    /* TR pin direction */
-  uint8 th_dir[2];    /* TH pin direction */
-} io_state;
-
-/* Global variables */
-extern io_state io_lut[2][256];
-extern io_state *io_current;
-
 /* Function prototypes */
-void pio_init(void);
-void pio_reset(void);
-void pio_shutdown(void);
-void pio_ctrl_w(uint8 data);
-uint8 pio_port_r(int offset);
-void sio_w(int offset, int data);
-uint8 sio_r(int offset);
+extern void pio_init(void);
+extern void pio_reset(void);
+extern void pio_shutdown(void);
+extern void pio_ctrl_w(uint8 data);
+extern uint8 pio_port_r(int offset);
+extern void sio_w(int offset, int data);
+extern uint8 sio_r(int offset);
 
 #endif /* _PIO_H_ */

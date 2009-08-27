@@ -28,15 +28,15 @@ bitmap_t bitmap;
 cart_t cart;
 input_t input;
 
-static int iline_table[] = {0xC0, 0xE0, 0xF0};
+static int line_z80 = 0;
 
 /* Run the virtual console emulation for one frame */
 void system_frame(int skip_render)
 {
-  int lpf = sms.display ? 313 : 262;
   int iline;
-  int line_z80 = 0;
-  int count_z80 = 0;
+
+  z80_cycle_count -= line_z80;
+  line_z80 = 0;
 
   /* Debounce pause key */
   if(input.system & INPUT_PAUSE)
@@ -68,9 +68,12 @@ void system_frame(int skip_render)
   /* reset Horizontal counter */
   vdp.left = vdp.reg[0x0A];
 
-  for(vdp.line = 0; vdp.line < lpf;)
+  /* reset collision flag infos */
+  vdp.spr_col = 0xff00;
+
+  for(vdp.line = 0; vdp.line < vdp.lpf;)
   {
-    iline = iline_table[vdp.extended];
+    iline = vdp.height;
 
     if(!skip_render)
     {
@@ -95,24 +98,26 @@ void system_frame(int skip_render)
       }
     }
 
-    if(vdp.line == iline)
+    if(vdp.line == (iline + 1))
     {
       vdp.status |= 0x80;
       vdp.vint_pending = 1;
       if(vdp.reg[0x01] & 0x20)
       {
-        count_z80 += z80_execute(1);
         z80_set_irq_line(0, ASSERT_LINE);
       }
     }
 
-    count_z80 += z80_execute(line_z80 - count_z80);
+    z80_execute(line_z80 - z80_cycle_count);
 
     sound_update(vdp.line);
 
     ++vdp.line;
 
-    if(vdp.mode <= 7) parse_line(vdp.line);
+    if(vdp.mode <= 7)
+    {
+      parse_line(vdp.line);
+    }
   }
 }
 
@@ -144,6 +149,7 @@ void system_reset(void)
   render_reset();
   sound_reset();
   system_manage_sram(cart.sram, SLOT_CART, SRAM_LOAD);
+  line_z80 = 0;
 }
 
 

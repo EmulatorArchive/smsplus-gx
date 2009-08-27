@@ -41,7 +41,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "emu2413.h"
+
+#include "shared.h"
 
 #ifndef PI
 #define PI M_PI
