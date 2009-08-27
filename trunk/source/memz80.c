@@ -166,9 +166,9 @@ uint8 sms_port_r(uint16 port)
 {
   port &= 0xFF;
 
-  /* FM unit (some games do not disable I/O chip) */
+  /* FM unit */
   if (port == 0xF2)
-    return fmunit_detect_r();
+    return fmunit_detect_r() & pio_port_r(port);
 
   switch(port & 0xC0)
   {
