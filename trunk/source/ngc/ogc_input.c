@@ -272,13 +272,10 @@ static void pad_update()
     {
       input.system = 0;
 
-      int count = coleco.keypad[i] >> 4;
-
-      if (p & PAD_TRIGGER_R) count++;
-      if (count > 11) count = 0;
-      coleco.keypad[i] = count << 4;
-      if (p & PAD_TRIGGER_L) coleco.keypad[i] |= count;
-      else coleco.keypad[i] |= 0x0f;
+      coleco.keypad[i] &= 0x0f;
+      if (p & PAD_TRIGGER_R) coleco.keypad[i]++;
+      if (coleco.keypad[i] > 11) coleco.keypad[i] = 0;
+      if (!(p & PAD_TRIGGER_L)) coleco.keypad[i] |= 0xf0;
     }
   }
 }
@@ -557,15 +554,13 @@ static void wpad_update(void)
       {
         input.system = 0;
 
-        int count = coleco.keypad[i] >> 4;
+        coleco.keypad[i] &= 0x0f;
         if ((p & WPAD_CLASSIC_BUTTON_PLUS) || (p & WPAD_BUTTON_PLUS))
-          count++;
-        if (count > 11) count = 0;
+          coleco.keypad[i]++;
+        if (coleco.keypad[i] > 11) coleco.keypad[i] = 0;
 
-        coleco.keypad[i] = count << 4;
-        if ((p & WPAD_CLASSIC_BUTTON_MINUS) || (p & WPAD_BUTTON_MINUS))
-          coleco.keypad[i] |= count;
-        else coleco.keypad[i] |= 0x0f;
+        if (!(p & WPAD_CLASSIC_BUTTON_MINUS) && !(p & WPAD_BUTTON_MINUS))
+          coleco.keypad[i] |= 0xf0;
       }
     }
   }
