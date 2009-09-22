@@ -48,7 +48,8 @@ typedef struct
   uint8 render;
   uint8 ntsc;
   uint8 bilinear;
-  uint8 palette;
+  uint8 sms_pal;
+  uint8 tms_pal;
   int8 autofreeze;
   uint8 use_bios;
   uint8 spritelimit;

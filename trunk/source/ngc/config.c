@@ -23,9 +23,9 @@
 #include "shared.h"
 
 #ifdef HW_RVL
-#define CONFIG_VERSION "SMSPLUS 1.3.0W"
+#define CONFIG_VERSION "SMSPLUS 1.3.1W"
 #else
-#define CONFIG_VERSION "SMSPLUS 1.3.0G"
+#define CONFIG_VERSION "SMSPLUS 1.3.1G"
 #endif
 
 void config_save()
@@ -104,7 +104,8 @@ void set_option_defaults ()
   option.ntsc         = 0;
   option.bilinear     = 1;
   option.tv_mode      = 0;
-  option.palette      = 1;
+  option.sms_pal      = 1;
+  option.tms_pal      = 0;
   option.autofreeze   = -1;
   option.spritelimit  = 1;
   option.extra_gg     = 0;

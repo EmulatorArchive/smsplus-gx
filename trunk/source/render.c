@@ -64,7 +64,7 @@ static uint8 lut[0x10000];
 
 static uint8 object_index_count;
 
-/* TMS mode palette */
+/* CRAM palette in TMS modes */
 static const uint8 tms_crom[] =
 {
   0x00, 0x00, 0x08, 0x0C,
@@ -73,25 +73,62 @@ static const uint8 tms_crom[] =
   0x04, 0x33, 0x15, 0x3F
 };
 
-/* TODO: implement original TMS palette for SG-1000 */
-static const uint8 tms_palette[16][3] =
+/* TODO: implement original TMS palette for SG-1000 & Colecovision */
+static uint8 tms_palette[16*3][3] =
 {
-  {  0,  0,  0},  /* Transparent */
-  {  0,  0,  0},  /* Black */
-  { 33,200, 66},  /* Medium green */
-  { 94,220,120},  /* Light green */
-  { 84, 85,237},  /* Dark blue */
-  {125,118,252},  /* Light blue */
-  {212, 82, 77},  /* Dark red */
-  { 66,235,245},  /* Cyan */
-  {252, 85, 84},  /* Medium red */
-  {255,121,120},  /* Light red */
-  {212,193, 84},  /* Dark yellow */
-  {230,206,128},  /* Light yellow */
-  { 33,176, 59},  /* Dark green */
-  {201, 91,186},  /* Magenta */
-  {204,204,204},  /* Gray */
-  {255,255,255}   /* White */
+  /* from Sean Young (http://www.smspower.org/dev/docs/tms9918a.txt) */
+  {  0,  0,  0},
+  {  0,  0,  0},
+  { 33,200, 66},
+  { 94,220,120},
+  { 84, 85,237},
+  {125,118,252},
+  {212, 82, 77},
+  { 66,235,245},
+  {252, 85, 84},
+  {255,121,120},
+  {212,193, 84},
+  {230,206,128},
+  { 33,176, 59},
+  {201, 91,186},
+  {204,204,204},
+  {255,255,255},
+
+  /* from Omar Cornut (http://www.smspower.org/dev/docs/sg1000.txt) */
+  {  0,  0,  0},
+  {  0,  0,  0},
+  { 32,192, 30},
+  { 96,224, 96},
+  { 32, 32,224},
+  { 64, 96,224},
+  {160, 32, 32},
+  { 64,192,224},
+  {224, 32, 32},
+  {224, 64, 64},
+  {192,192, 32},
+  {192,192,128},
+  { 32,128, 32},
+  {192, 64,160},
+  {160,160,160},
+  {224,224,224},
+
+  /* from Richard F. Drushel (http://users.stargate.net/~drushel/pub/coleco/twwmca/wk961118.html) */
+  {  0,  0,  0},
+  {  0,  0,  0},
+  { 71,183, 59},
+  {124,207,111},
+  { 93, 78,255},
+  {128,114,255},
+  {182, 98, 71},
+  { 93,200,237},
+  {215,107, 72},
+  {251,143,108},
+  {195,205, 65},
+  {211,218,118},
+  { 62,159, 47},
+  {182,100,199},
+  {204,204,204},
+  {255,255,255}
 };
 
 /* Attribute expansion table */
@@ -634,14 +671,29 @@ void palette_sync(int index)
   }
   else
   {
-    /* TMS9918 palette */
-    r = (tms_crom[index & 0x0F] >> 0) & 3;
-    g = (tms_crom[index & 0x0F] >> 2) & 3;
-    b = (tms_crom[index & 0x0F] >> 4) & 3;
+    /* TMS Mode (16 colors only) */
+    int color = index & 0x0F;
 
-    r = sms_cram_expand_table[r];
-    g = sms_cram_expand_table[g];
-    b = sms_cram_expand_table[b];
+    if (sms.console < CONSOLE_SMS)
+    {
+      /* pick one of the original TMS9918 palettes */
+      color += option.tms_pal * 16;
+
+      r = tms_palette[color][0];
+      g = tms_palette[color][1];
+      b = tms_palette[color][2];
+    }
+    else
+    {
+      /* fixed CRAM palette in TMS mode */ 
+      r = (tms_crom[color] >> 0) & 3;
+      g = (tms_crom[color] >> 2) & 3;
+      b = (tms_crom[color] >> 4) & 3;
+
+      r = sms_cram_expand_table[r];
+      g = sms_cram_expand_table[g];
+      b = sms_cram_expand_table[b];
+    }
   }
 
 #ifndef NGC
