@@ -242,12 +242,11 @@ void dispmenu ()
 {
   s8 ret;
   u8 quit = 0;
-  u8 count = option.aspect ? 9 : 11;
+  u8 count = option.aspect ? 8 : 10;
   u8 prevmenu = menu;
-  int i;
   menu = 0;
 
-  char items[11][25];
+  char items[10][25];
 
   while (quit == 0)
   {
@@ -265,13 +264,10 @@ void dispmenu ()
     else if (option.ntsc == 3) sprintf (items[4], "NTSC Filter: RGB");
     else sprintf (items[4], "NTSC Filter: OFF");
     sprintf (items[5], "Borders: %s", option.overscan ? " ON" : "OFF");
-    if (option.palette == 0) sprintf (items[6], "SMS Palette: ORIGINAL");
-    else if (option.palette == 1) sprintf (items[6], "SMS Palette:  NORMAL");
-    else if (option.palette == 2) sprintf (items[6], "SMS Palette:  BRIGHT");
-    sprintf (items[7], "Center X: %s%02d",option. xshift < 0 ? "-":"+", abs(option.xshift));
-    sprintf (items[8], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
-    sprintf (items[9], "Scale  X:  %02d", option.xscale);
-    sprintf (items[10], "Scale  Y:  %02d", option.yscale);
+    sprintf (items[6], "Center X: %s%02d",option. xshift < 0 ? "-":"+", abs(option.xshift));
+    sprintf (items[7], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
+    sprintf (items[8], "Scale  X:  %02d", option.xscale);
+    sprintf (items[9], "Scale  Y:  %02d", option.yscale);
 
     ret = domenu (&items[0], count, 1);
 
@@ -321,50 +317,26 @@ void dispmenu ()
         vdp_init();
         break;
 
-      case 6:
-        option.palette = (option.palette + 1) % 3;
-        if (option.palette == 0)
-        {
-          sms_cram_expand_table[1] = (4 << 3)  + (1 << 2);
-          sms_cram_expand_table[2] = (12 << 3) + (1 << 2);
-          sms_cram_expand_table[3] = (22 << 3) + (1 << 2);
-        }
-        else if (option.palette == 1)
-        {
-          sms_cram_expand_table[1] = (5 << 3)  + (1 << 2);
-          sms_cram_expand_table[2] = (15 << 3) + (1 << 2);
-          sms_cram_expand_table[3] = (27 << 3) + (1 << 2);
-        }
-        else if (option.palette == 2)
-        {
-          sms_cram_expand_table[1] = (6 << 3)  + (1 << 2);
-          sms_cram_expand_table[2] = (18 << 3) + (1 << 2);
-          sms_cram_expand_table[3] = (31 << 3) + (1 << 2);
-        }
-
-        for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
-        break;
-
-      case 7:  /*** Center X ***/
-      case -9:
+      case 6:  /*** Center X ***/
+      case -8:
         if (ret<0) option.xshift --;
         else option.xshift ++;
         break;
 
-      case 8:  /*** Center Y ***/
-      case -10:
+      case 7:  /*** Center Y ***/
+      case -9:
         if (ret<0) option.yshift --;
         else option.yshift ++;
         break;
       
-      case 9:  /*** Scale X ***/
-      case -11:
+      case 8:  /*** Scale X ***/
+      case -10:
         if (ret<0) option.xscale --;
         else option.xscale ++;
         break;
 
-      case 10:  /*** Scale Y ***/
-      case -12:
+      case 9:  /*** Scale Y ***/
+      case -11:
         if (ret<0) option.yscale --;
         else option.yscale ++;
         break;
@@ -387,11 +359,12 @@ void sysmenu ()
 {
   s8 ret;
   u8 quit = 0;
-  u8 count = 7;
+  u8 count = 9;
   u8 prevmenu = menu;
+  int i;
   menu = 0;
 
-  char miscmenu[7][25];
+  char items[9][25];
   
   if (option.fm_enable)
   {
@@ -406,33 +379,43 @@ void sysmenu ()
   {
     strcpy (menutitle, "Press B to return");
       
-    if (fm_type == 0) sprintf (miscmenu[0], "FM     -     OFF");
-    else if (fm_type == 1) sprintf (miscmenu[0], "FM     - EMU2413");
-    else if (fm_type == 2) sprintf (miscmenu[0], "FM     -  YM2413");
+    if (fm_type == 0) sprintf (items[0], "FM     -     OFF");
+    else if (fm_type == 1) sprintf (items[0], "FM     - EMU2413");
+    else if (fm_type == 2) sprintf (items[0], "FM     -  YM2413");
 
-    if (option.country == 1) sprintf (miscmenu[1], "Country -    USA");
-    else if (option.country == 2) sprintf (miscmenu[1], "Country -    EUR");
-    else if (option.country == 3) sprintf (miscmenu[1], "Country -    JAP");
-    else sprintf (miscmenu[1], "Country -   AUTO");
+    if (option.country == 1) sprintf (items[1], "Country -    USA");
+    else if (option.country == 2) sprintf (items[1], "Country -    EUR");
+    else if (option.country == 3) sprintf (items[1], "Country -    JAP");
+    else sprintf (items[1], "Country -   AUTO");
         
-    if (option.console == 1) sprintf (miscmenu[2], "Console -    SMS");
-    else if (option.console == 2) sprintf (miscmenu[2], "Console -   SMS2");
-    else if (option.console == 3) sprintf (miscmenu[2], "Console -     GG");
-    else if (option.console == 4) sprintf (miscmenu[2], "Console - GG-SMS");
-    else if (option.console == 5) sprintf (miscmenu[2], "Console - SG1000");
-    else if (option.console == 6) sprintf (miscmenu[2], "Console - COLECO");
-    else sprintf (miscmenu[2], "Console -   AUTO");
+    if (option.console == 1) sprintf (items[2], "Console -    SMS");
+    else if (option.console == 2) sprintf (items[2], "Console -   SMS2");
+    else if (option.console == 3) sprintf (items[2], "Console -     GG");
+    else if (option.console == 4) sprintf (items[2], "Console - GG-SMS");
+    else if (option.console == 5) sprintf (items[2], "Console - SG1000");
+    else if (option.console == 6) sprintf (items[2], "Console - COLECO");
+    else sprintf (items[2], "Console -   AUTO");
         
-    sprintf (miscmenu[3], "Sprite Limit: %s", option.spritelimit ? " ON" : "OFF");
-    sprintf (miscmenu[4], "SMS BIOS: %s", option.use_bios ? " ON" : "OFF");
-    sprintf (miscmenu[5], "GG Extra: %s", option.extra_gg ? " ON" : "OFF");
+    sprintf (items[3], "Sprite Limit: %s", option.spritelimit ? " ON" : "OFF");
 
-    if (option.autofreeze == 0) sprintf (miscmenu[6], "Auto FREEZE: FAT");
-    else if (option.autofreeze == 1) sprintf (miscmenu[6], "Auto FREEZE: MCARD A");
-    else if (option.autofreeze == 2) sprintf (miscmenu[6], "Auto FREEZE: MCARD B");
-    else sprintf (miscmenu[6], "Auto FREEZE: OFF");
+    if (option.sms_pal == 0) sprintf (items[4], "SMS Palette: ORIGINAL");
+    else if (option.sms_pal == 1) sprintf (items[4], "SMS Palette:  NORMAL");
+    else if (option.sms_pal == 2) sprintf (items[4], "SMS Palette:  BRIGHT");
 
-    ret = domenu (&miscmenu[0], count, 0);
+    if (option.tms_pal == 0) sprintf (items[5], "TMS Palette: TYPE1");
+    else if (option.tms_pal == 1) sprintf (items[5], "TMS Palette:  TYPE2");
+    else if (option.tms_pal == 2) sprintf (items[5], "TMS Palette:  TYPE3");
+
+    sprintf (items[6], "SMS BIOS: %s", option.use_bios ? " ON" : "OFF");
+
+    sprintf (items[7], "GG Extra: %s", option.extra_gg ? " ON" : "OFF");
+
+    if (option.autofreeze == 0) sprintf (items[8], "Auto FREEZE: FAT");
+    else if (option.autofreeze == 1) sprintf (items[8], "Auto FREEZE: MCARD A");
+    else if (option.autofreeze == 2) sprintf (items[8], "Auto FREEZE: MCARD B");
+    else sprintf (items[8], "Auto FREEZE: OFF");
+
+    ret = domenu (&items[0], count, 0);
 
     switch (ret)
     {
@@ -474,7 +457,35 @@ void sysmenu ()
         option.spritelimit ^= 1;
         break;
 
-      case 4: /*** SMS BIOS ***/
+      case 4:
+        option.sms_pal = (option.sms_pal + 1) % 3;
+        if (option.sms_pal == 0)
+        {
+          sms_cram_expand_table[1] = (4 << 3)  + (1 << 2);
+          sms_cram_expand_table[2] = (12 << 3) + (1 << 2);
+          sms_cram_expand_table[3] = (22 << 3) + (1 << 2);
+        }
+        else if (option.sms_pal == 1)
+        {
+          sms_cram_expand_table[1] = (5 << 3)  + (1 << 2);
+          sms_cram_expand_table[2] = (15 << 3) + (1 << 2);
+          sms_cram_expand_table[3] = (27 << 3) + (1 << 2);
+        }
+        else if (option.sms_pal == 2)
+        {
+          sms_cram_expand_table[1] = (6 << 3)  + (1 << 2);
+          sms_cram_expand_table[2] = (18 << 3) + (1 << 2);
+          sms_cram_expand_table[3] = (31 << 3) + (1 << 2);
+        }
+        for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
+        break;
+
+     case 5:
+        option.tms_pal = (option.tms_pal + 1) % 3;
+        for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
+        break;
+
+     case 6: /*** SMS BIOS ***/
         option.use_bios ^= 1;
         
         /* reset BIOS flag */
@@ -484,12 +495,12 @@ void sysmenu ()
         if ((bios.enabled == 3) || smsromsize) system_poweron();
         break;
 
-      case 5: /*** GG Extra mode ***/
+      case 7: /*** GG Extra mode ***/
         option.extra_gg ^= 1;
         system_init();
         break;
 
-      case 6:  /*** FreezeState autoload/autosave ***/
+      case 8:  /*** FreezeState autoload/autosave ***/
         option.autofreeze ++;
         if (option.autofreeze > 2) option.autofreeze = -1;
         break;

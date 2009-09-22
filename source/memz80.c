@@ -384,24 +384,17 @@ uint8 md_port_r(uint16 port)
 
 void tms_port_w(uint16 port, uint8 data)
 {
-  switch(port & 0xC1)
+  switch(port & 0xC0)
   {
-    case 0x00:
-      /* No memory control register */
-      return;
-
-    case 0x01:
-      pio_ctrl_w(data);
-      return;
-
     case 0x40:
-    case 0x41:
       psg_write(data);
       return;
 
     case 0x80:
-    case 0x81:
       tms_write(port, data);
+      return;
+
+    default:
       return;
   }
 }

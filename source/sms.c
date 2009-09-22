@@ -224,6 +224,11 @@ void sms_reset(void)
         cpu_writemap[i] = dummy_write;
       }
 
+      /* reset I/O */
+      coleco.keypad[0] = 0xf0;
+      coleco.keypad[1] = 0xf0;
+      coleco.pio_mode  = 0x00;
+
       break;
     }
 

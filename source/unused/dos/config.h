@@ -31,6 +31,7 @@ typedef struct
   uint8 use_bios;
   uint8 spritelimit;
   uint8 extra_gg;
+  uint8 tms_pal;
 } t_option;
 
 

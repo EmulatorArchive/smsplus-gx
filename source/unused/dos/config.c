@@ -151,6 +151,7 @@ void set_option_defaults(void)
   option.use_bios     = 0;
   option.spritelimit  = 1;
   option.extra_gg     = 0;
+  option.tms_pal      = 0;
 }
 
 /* Parse argument list */
