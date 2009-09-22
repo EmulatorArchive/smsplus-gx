@@ -58,6 +58,7 @@ void system_frame(int skip_render)
 
   /* End of frame, parse sprites for line 0 on line 261 (VCount=$FF) */
   if(vdp.mode <= 7) parse_line(0);
+  else  parse_satb(0);
 
   /* 3D glasses faking */
   if (sms.glasses_3d) skip_render = sms.wram[0x1ffb];
@@ -104,7 +105,15 @@ void system_frame(int skip_render)
       vdp.vint_pending = 1;
       if(vdp.reg[0x01] & 0x20)
       {
-        z80_set_irq_line(0, ASSERT_LINE);
+        if (sms.console == CONSOLE_COLECO)
+        {
+          z80_set_irq_line(INPUT_LINE_NMI, ASSERT_LINE);
+          z80_set_irq_line(INPUT_LINE_NMI, CLEAR_LINE);
+        }
+        else
+        {
+          z80_set_irq_line(0, ASSERT_LINE);
+        }
       }
     }
 
@@ -113,11 +122,6 @@ void system_frame(int skip_render)
     sound_update(vdp.line);
 
     ++vdp.line;
-
-    if(vdp.mode <= 7)
-    {
-      parse_line(vdp.line);
-    }
   }
 }
 

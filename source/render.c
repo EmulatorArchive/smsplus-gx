@@ -33,7 +33,7 @@ struct
   uint16 ypos;
   uint16 xpos;
   uint16 attr;
-} object_info[8];
+} object_info[64];
 
 /* Background drawing function */
 void (*render_bg)(int line) = NULL;
@@ -106,7 +106,6 @@ static const uint32 atex[4] =
 /* Bitplane to packed pixel LUT */
 static uint32 bp_lut[0x10000];
 
-static void parse_satb(int line);
 static void update_bg_pattern_cache(void);
 static void remap_8_to_16(int line);
 
@@ -330,8 +329,12 @@ void render_line(int line)
   else linebuf = &internal_buffer[option.overscan ? 14:0];
 #endif
 
-  /* parse sprites */
-  if (vdp.mode > 7) parse_satb(line);
+  /* Sprite Limit */
+  if (vdp.spr_ovr)
+  {
+    vdp.spr_ovr = 0;
+    vdp.status |= 0x40;
+  }
 
   if (!(vdp.reg[1] & 0x40))
   {
@@ -369,6 +372,10 @@ void render_line(int line)
     memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
     memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
   }
+
+  /* parse Sprites (line N+1) */
+  if (vdp.mode > 7) parse_satb(line+1);
+  else parse_line(line+1);
 
   /* LightGun mark */
   if (sms.device[0] == DEVICE_LIGHTGUN)
@@ -550,7 +557,7 @@ void render_obj_sms(int line)
           linebuf_ptr[x] = lut[(bg << 8) | (sp)];
 
           /* Check sprite collision */
-          if ((linebuf_ptr[x] & 0x0f) && (bg & 0x40) && !(vdp.status & 0x20))
+          if ((bg & 0x40) && !(vdp.status & 0x20))
           {
             /* pixel-accurate SPR_COL flag */
             vdp.status |= 0x20;
@@ -579,7 +586,7 @@ void render_obj_sms(int line)
           linebuf_ptr[x] = lut[(bg << 8) | (sp)];
 
           /* Check sprite collision */
-          if ((linebuf_ptr[x] & 0x0f) && (bg & 0x40) && !(vdp.status & 0x20))
+          if ((bg & 0x40) && !(vdp.status & 0x20))
           {
             /* pixel-accurate SPR_COL flag */
             vdp.status |= 0x20;
@@ -602,7 +609,7 @@ void palette_sync(int index)
     /* Mode 4 */
     if(sms.console == CONSOLE_GG)
     {
-      /* SMS palette */
+      /* GG palette */
       /* ----BBBBGGGGRRRR */
       r = (vdp.cram[(index << 1) | (0)] >> 0) & 0x0F;
       g = (vdp.cram[(index << 1) | (0)] >> 4) & 0x0F;
@@ -614,7 +621,7 @@ void palette_sync(int index)
     }
     else
     {
-      /* GG palette */
+      /* SMS palette */
       /* --BBGGRR */
       r = (vdp.cram[index] >> 0) & 3;
       g = (vdp.cram[index] >> 2) & 3;
@@ -648,7 +655,8 @@ void palette_sync(int index)
   pixel[index] = MAKE_PIXEL(r, g, b);
 }
 
-static void parse_satb(int line)
+
+void parse_satb(int line)
 {
   /* Pointer to sprite attribute table */
   uint8 *st = (uint8 *)&vdp.vram[vdp.satb];
@@ -679,21 +687,21 @@ static void parse_satb(int line)
     if(yp > 240) yp -= 256;
 
     /* Actual Y position is +1 */
-    yp++;
+    yp = (yp + 1) & 0xff;
 
     if((line >= yp) && (line < (yp + height)))
     {
       /* sprite limit (max. 16 or 20 sprites displayed per line) */
-      if ((object_index_count == 8) && option.spritelimit)
+      if (object_index_count == 8)
       {
-        if(line < vdp.height) vdp.status |= 0x40;
-        return;
+        if (line < vdp.height) vdp.spr_ovr = 1;
+        if (option.spritelimit)return;
       }
 
       object_info[object_index_count].ypos = yp;
       object_info[object_index_count].xpos = st[0x80 + (i << 1)];
       object_info[object_index_count].attr = st[0x81 + (i << 1)];
-      object_index_count += 1;
+      ++object_index_count;
     }
   }
 }

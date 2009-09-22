@@ -104,9 +104,9 @@ int sound_init(void)
   /* Allocate emulated sound streams */
   for(i = 0; i < STREAM_MAX; i++)
   {
-  snd.stream[i] = malloc(snd.buffer_size);
-  if(!snd.stream[i]) return 0;
-  memset(snd.stream[i], 0, snd.buffer_size);
+    snd.stream[i] = malloc(snd.buffer_size);
+    if(!snd.stream[i]) return 0;
+    memset(snd.stream[i], 0, snd.buffer_size);
   }
 
   /* Allocate sound output streams */

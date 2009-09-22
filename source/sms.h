@@ -58,9 +58,10 @@ enum {
 };
 
 enum {
-  CONSOLE_SG1000  = 0x10,
-  CONSOLE_SC3000  = 0x11,
-  CONSOLE_SF7000  = 0x12,
+  CONSOLE_COLECO  = 0x10,
+  CONSOLE_SG1000  = 0x11,
+  CONSOLE_SC3000  = 0x12,
+  CONSOLE_SF7000  = 0x13,
 
   CONSOLE_SMS     = 0x20,
   CONSOLE_SMS2    = 0x21,
@@ -74,10 +75,12 @@ enum {
   CONSOLE_GENPBC  = 0x83
 };
 
+#define HWTYPE_TMS  CONSOLE_COLECO
 #define HWTYPE_SMS  CONSOLE_SMS
 #define HWTYPE_GG   CONSOLE_GG
 #define HWTYPE_MD   CONSOLE_MD
 
+#define IS_TMS    (sms.console & HWTYPE_TMS)
 #define IS_SMS    (sms.console & HWTYPE_SMS)
 #define IS_GG     (sms.console & HWTYPE_GG)
 #define IS_MD     (sms.console & HWTYPE_MD)
@@ -130,11 +133,17 @@ typedef struct
   uint8 mapper;
 } slot_t;
 
+typedef struct {
+  uint8 rom[0x2000];  /* BIOS ROM */
+  uint8 pio_mode;     /* PIO mode */
+  uint8 keypad[2];    /* Keypad inputs */
+} t_coleco;
+
 /* Global data */
 extern sms_t sms;
 extern bios_t bios;
 extern slot_t slot;
-
+extern t_coleco coleco;
 extern uint8 dummy_write[0x400];
 extern uint8 dummy_read[0x400];
 

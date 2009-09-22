@@ -91,10 +91,10 @@ void check_ui_keys(void)
     /* Speed throttling */
     if(check_key(KEY_F10))
     {
-		option.overscan = (option.overscan +1)%3;
+		option.overscan ^= 1;
 		clear(screen);
 		vdp_init();
-		add_msg("option.overscan %d",option.overscan);
+		add_msg("option.overscan %s",option.overscan ? "ON":"OFF");
     }
 
     /* Speed throttling */

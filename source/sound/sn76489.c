@@ -23,7 +23,7 @@
 #include "shared.h"
 
 #define NoiseInitialState   0x8000  /* Initial state of shift register */
-#define PSG_CUTOFF      0x6   /* Value below which PSG does not output */
+#define PSG_CUTOFF          0x6     /* Value below which PSG does not output */
 
 static const int PSGVolumeValues[2][16] = {
 /* These values are taken from a real SMS2's output */

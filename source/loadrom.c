@@ -248,6 +248,7 @@ void set_config()
   sms.glasses_3d = 0;
   sms.device[0] = DEVICE_PAD2B;
   sms.device[1] = DEVICE_PAD2B;
+  sms.use_fm = option.fm_enable;
 
   /* console type detection */
   /* SMS Header is located at 0x7ff0 */
@@ -316,6 +317,11 @@ void set_config()
   else if (option.console == 5)
   {
     sms.console = CONSOLE_SG1000;
+    cart.mapper = MAPPER_NONE;
+  }
+  else if (option.console == 6)
+  {
+    sms.console = CONSOLE_COLECO;
     cart.mapper = MAPPER_NONE;
   }
 

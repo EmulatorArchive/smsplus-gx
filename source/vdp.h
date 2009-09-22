@@ -63,6 +63,7 @@ typedef struct
     uint8 hint_pending;
     uint16 cram_latch;
     uint8 bd;
+    uint8 spr_ovr;
     uint16 spr_col;
 } vdp_t;
 

@@ -26,9 +26,13 @@ typedef struct
   int console;
   int fm_enable;
   int fm_which;
-  int codies;
-  int overscan;
+  uint8 overscan;
+  uint8 ntsc;
+  uint8 use_bios;
+  uint8 spritelimit;
+  uint8 extra_gg;
 } t_option;
+
 
 /* Global data */
 t_option option;

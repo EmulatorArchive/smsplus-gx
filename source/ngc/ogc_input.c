@@ -202,6 +202,29 @@ static void pad_update()
     y = PAD_StickY (i);
     p = PAD_ButtonsHeld(i);
 
+    /* MENU */
+    if (p & pad_keymap[i][KEY_MENU])
+    {
+      ConfigRequested = 1;
+      return;
+    }
+
+    /* PAUSE & START button */
+    if (p & pad_keymap[i][KEY_PAUSE])
+      input.system |= (sms.console == CONSOLE_GG) ? INPUT_START : INPUT_PAUSE;
+
+    /* SOFT RESET */
+    if (((p & PAD_TRIGGER_R) && (p & PAD_TRIGGER_L)) || softreset)
+    {
+      input.system |= INPUT_RESET;
+      softreset = 0;
+      SYS_SetResetCallback(set_softreset);
+    }
+
+    /* BUTTONS 1&2 */
+    if (p & pad_keymap[i][KEY_BUTTON1]) input.pad[i] |= INPUT_BUTTON1;
+    if (p & pad_keymap[i][KEY_BUTTON2]) input.pad[i] |= INPUT_BUTTON2;
+
     /* check emulated device type */
     switch (sms.device[i])
     {
@@ -244,28 +267,19 @@ static void pad_update()
         break;
     }
 
-    /* MENU */
-    if (p & pad_keymap[i][KEY_MENU])
+    /* Colecovision support */
+    if (sms.console == CONSOLE_COLECO)
     {
-      ConfigRequested = 1;
-      return;
+      input.system = 0;
+
+      int count = coleco.keypad[i] >> 4;
+
+      if (p & PAD_TRIGGER_R) count++;
+      if (count > 11) count = 0;
+      coleco.keypad[i] = count << 4;
+      if (p & PAD_TRIGGER_L) coleco.keypad[i] |= count;
+      else coleco.keypad[i] |= 0x0f;
     }
-
-    /* PAUSE & START button */
-    if (p & pad_keymap[i][KEY_PAUSE])
-      input.system |= (sms.console == CONSOLE_GG) ? INPUT_START : INPUT_PAUSE;
-
-    /* SOFT RESET */
-    if (((p & PAD_TRIGGER_R) && (p & PAD_TRIGGER_L)) || softreset)
-    {
-      input.system |= INPUT_RESET;
-      softreset = 0;
-      SYS_SetResetCallback(set_softreset);
-    }
-
-    /* BUTTONS 1&2 */
-    if (p & pad_keymap[i][KEY_BUTTON1]) input.pad[i] |= INPUT_BUTTON1;
-    if (p & pad_keymap[i][KEY_BUTTON2]) input.pad[i] |= INPUT_BUTTON2;
   }
 }
 
@@ -445,6 +459,41 @@ static void wpad_update(void)
       if ((i == 0) && (exp == WPAD_EXP_CLASSIC)) use_wpad = 1;
       else use_wpad = 0;
 
+      /* retrieve current key mapping */
+      u8 index = exp + (3 * i);
+   
+      /* MENU */
+      if ((p & wpad_keymap[index][KEY_MENU]) || (p & WPAD_BUTTON_HOME))
+      {
+        ConfigRequested = 1;
+        return;
+      }
+
+      /* PAUSE & START */
+      if (p & wpad_keymap[index][KEY_PAUSE])
+        input.system |= (sms.console == CONSOLE_GG) ? INPUT_START : INPUT_PAUSE;
+
+      /* RESET */
+      if (((p & WPAD_CLASSIC_BUTTON_PLUS) && (p & WPAD_CLASSIC_BUTTON_MINUS)) ||
+          ((p & WPAD_BUTTON_PLUS) && (p & WPAD_BUTTON_MINUS)) || softreset)
+      {
+        input.system |= INPUT_RESET;
+        softreset = 0;
+        SYS_SetResetCallback(set_softreset);
+      }
+      
+      /* BUTTON 1 */
+      if (p & wpad_keymap[index][KEY_BUTTON1])
+        input.pad[i] |= INPUT_BUTTON1;
+      if (use_wpad && (p & wpad_keymap[0][KEY_BUTTON1]))
+        input.pad[1] |= INPUT_BUTTON1;
+
+      /* BUTTON 2 */
+      if (p & wpad_keymap[index][KEY_BUTTON2])
+        input.pad[i] |= INPUT_BUTTON2;
+      if (use_wpad && (p & wpad_keymap[0][KEY_BUTTON2]))
+        input.pad[1] |= INPUT_BUTTON2;
+
       /* check emulated device type */
       switch (sms.device[i])
       {
@@ -464,7 +513,6 @@ static void wpad_update(void)
             if ((p & wpad_dirmap[0][PAD_LEFT])  || (x < -60)) input.pad[1] |= INPUT_LEFT;
             else if ((p & wpad_dirmap[0][PAD_RIGHT]) || (x >  60)) input.pad[1] |= INPUT_RIGHT;
           }
-
           break;
 
         /* analog devices */
@@ -504,40 +552,21 @@ static void wpad_update(void)
           break;
       }
 
-      /* retrieve current key mapping */
-      u8 index = exp + (3 * i);
-   
-      /* MENU */
-      if ((p & wpad_keymap[index][KEY_MENU]) || (p & WPAD_BUTTON_HOME))
+      /* Colecovision keypad support */
+      if (sms.console == CONSOLE_COLECO)
       {
-        ConfigRequested = 1;
-        return;
+        input.system = 0;
+
+        int count = coleco.keypad[i] >> 4;
+        if ((p & WPAD_CLASSIC_BUTTON_PLUS) || (p & WPAD_BUTTON_PLUS))
+          count++;
+        if (count > 11) count = 0;
+
+        coleco.keypad[i] = count << 4;
+        if ((p & WPAD_CLASSIC_BUTTON_MINUS) || (p & WPAD_BUTTON_MINUS))
+          coleco.keypad[i] |= count;
+        else coleco.keypad[i] |= 0x0f;
       }
-
-      /* PAUSE & START */
-      if (p & wpad_keymap[index][KEY_PAUSE])
-        input.system |= (sms.console == CONSOLE_GG) ? INPUT_START : INPUT_PAUSE;
-
-      /* RESET */
-      if (((p & WPAD_CLASSIC_BUTTON_PLUS) && (p & WPAD_CLASSIC_BUTTON_MINUS)) ||
-          ((p & WPAD_BUTTON_PLUS) && (p & WPAD_BUTTON_MINUS)) || softreset)
-      {
-        input.system |= INPUT_RESET;
-        softreset = 0;
-        SYS_SetResetCallback(set_softreset);
-      }
-      
-      /* BUTTON 1 */
-      if (p & wpad_keymap[index][KEY_BUTTON1])
-        input.pad[i] |= INPUT_BUTTON1;
-      if (use_wpad && (p & wpad_keymap[0][KEY_BUTTON1]))
-        input.pad[1] |= INPUT_BUTTON1;
-
-      /* BUTTON 2 */
-      if (p & wpad_keymap[index][KEY_BUTTON2])
-        input.pad[i] |= INPUT_BUTTON2;
-      if (use_wpad && (p & wpad_keymap[0][KEY_BUTTON2]))
-        input.pad[1] |= INPUT_BUTTON2;
     }
   }
 }
