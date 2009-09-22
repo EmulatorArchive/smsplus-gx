@@ -59,12 +59,19 @@ static void load_bios()
 {
   char pathname[MAXPATHLEN];
 
-  /* reset BIOS flag */
-  bios.enabled  = 0;
-
-  /* open BIOS file */
-  sprintf (pathname, "%s/BIOS.sms",DEFAULT_PATH);
+  /* Colecovision BIOS */
+  sprintf (pathname, "%s/BIOS.col",DEFAULT_PATH);
   FILE *fp = fopen(pathname, "rb");
+  if (fp)
+  {
+    fread(coleco.rom, 1, 0x2000, fp);
+    fclose(fp);
+  }
+
+  /* Master System BIOS */
+  bios.enabled = 0;
+  sprintf (pathname, "%s/BIOS.sms",DEFAULT_PATH);
+  fp = fopen(pathname, "rb");
   if (fp == NULL) return;
 
   /* get BIOS size */
