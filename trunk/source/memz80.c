@@ -408,23 +408,62 @@ void tms_port_w(uint16 port, uint8 data)
 
 uint8 tms_port_r(uint16 port)
 {
-  port &= 0xFF;
-
   switch(port & 0xC0)
   {
-    case 0x00:
-      return z80_read_unmapped();
-
-    case 0x40:
-      return vdp_counter_r(port);
-
     case 0x80:
       return vdp_read(port);
 
     case 0xC0:
       return pio_port_r(port);
-  }
 
-  /* Just to please the compiler */
-  return -1;
+    default:
+      return 0xff;
+  }
+}
+
+/*--------------------------------------------------------------------------*/
+/* Colecovision port handlers                                               */
+/*--------------------------------------------------------------------------*/
+void coleco_port_w(uint16 port, uint8 data)
+{
+  /* A7 is used as enable input */
+  /* A6 & A5 are used to decode the address */
+  switch(port & 0xE0)
+  {
+    case 0x80:
+      coleco.pio_mode = 0;
+      return;
+
+    case 0xa0:
+      tms_write(port,data);
+      return;
+
+    case 0xc0:
+      coleco.pio_mode = 1;
+      return;
+
+    case 0xe0:
+      psg_write(data);
+      return;
+
+    default:
+      return;
+  }
+}
+
+uint8 coleco_port_r(uint16 port)
+{
+  /* A7 is used as enable input */
+  /* A6 & A5 are used to decode the address */
+  switch(port & 0xE0)
+  {
+    case 0xa0:
+      return vdp_read(port);
+
+    case 0xe0:
+      return coleco_pio_r((port>>1)&1);
+
+    default:
+      return 0xff;
+  }
 }

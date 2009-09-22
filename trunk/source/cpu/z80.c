@@ -464,7 +464,6 @@ INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
  * adjust cycle count by n T-states
  ***************************************************************/
 #define CC(prefix,opcode) z80_ICount -= cc[Z80_TABLE_##prefix][opcode]
-#define CC(prefix,opcode) z80_ICount -= cc[Z80_TABLE_##prefix][opcode]
 
 /***************************************************************
  * execute an opcode
@@ -477,12 +476,12 @@ INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
 }
 
 #if BIG_SWITCH
-#define EXEC_INLINE(prefix,opcode)                \
-{                                \
-  unsigned op = opcode;                    \
+#define EXEC_INLINE(prefix,opcode)  \
+{                                   \
+  unsigned op = opcode;             \
   CC(prefix,op);                    \
-  switch(op)                          \
-  {                              \
+  switch(op)                        \
+  {                                 \
   case 0x00:prefix##_##00();break; case 0x01:prefix##_##01();break; case 0x02:prefix##_##02();break; case 0x03:prefix##_##03();break; \
   case 0x04:prefix##_##04();break; case 0x05:prefix##_##05();break; case 0x06:prefix##_##06();break; case 0x07:prefix##_##07();break; \
   case 0x08:prefix##_##08();break; case 0x09:prefix##_##09();break; case 0x0a:prefix##_##0a();break; case 0x0b:prefix##_##0b();break; \
@@ -547,7 +546,7 @@ INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
   case 0xf4:prefix##_##f4();break; case 0xf5:prefix##_##f5();break; case 0xf6:prefix##_##f6();break; case 0xf7:prefix##_##f7();break; \
   case 0xf8:prefix##_##f8();break; case 0xf9:prefix##_##f9();break; case 0xfa:prefix##_##fa();break; case 0xfb:prefix##_##fb();break; \
   case 0xfc:prefix##_##fc();break; case 0xfd:prefix##_##fd();break; case 0xfe:prefix##_##fe();break; case 0xff:prefix##_##ff();break; \
-  }                                                                  \
+  }                                                                                                                                   \
 }
 #else
 #define EXEC_INLINE EXEC
@@ -557,14 +556,10 @@ INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
 /***************************************************************
  * Enter HALT state; write 1 to fake port on first execution
  ***************************************************************/
-#define ENTER_HALT {                      \
-  PC--;                            \
-  HALT = 1;                          \
+#define ENTER_HALT {                          \
+  PC--;                                       \
+  HALT = 1;                                   \
 }
-
-/*if( Z80.irq_state == CLEAR_LINE )              \
-    z80_burn( z80_ICount );                  \
-}*/
 
 /***************************************************************
  * Leave HALT state; write 0 to fake port
@@ -667,8 +662,8 @@ INLINE UINT32 ARG16(void)
 /***************************************************************
  * JP
  ***************************************************************/
-#define JP {                          \
-  PCD = ARG16();                        \
+#define JP {                                    \
+  PCD = ARG16();                                \
   MEMPTR = PCD;                                 \
 }
 
@@ -677,12 +672,12 @@ INLINE UINT32 ARG16(void)
  ***************************************************************/
 #define JP_COND(cond) {                         \
   if (cond)                                     \
-  {                              \
-    PCD = ARG16();                      \
+  {                                             \
+    PCD = ARG16();                              \
     MEMPTR = PCD;                               \
-  }                              \
-  else                            \
-  {                              \
+  }                                             \
+  else                                          \
+  {                                             \
     MEMPTR = ARG16(); /* implicit do PC += 2 */ \
   }                                             \
 }
@@ -701,21 +696,21 @@ INLINE UINT32 ARG16(void)
  ***************************************************************/
 #define JR_COND(cond, opcode) {   \
   if (cond)                       \
-  {                              \
+  {                               \
     JR();                         \
     CC(ex, opcode);               \
-  }                              \
-  else PC++;                          \
+  }                               \
+  else PC++;                      \
 }
 
 /***************************************************************
  * CALL
  ***************************************************************/
 #define CALL() {                  \
-  EA = ARG16();                        \
+  EA = ARG16();                   \
   MEMPTR = EA;                    \
   PUSH(pc);                       \
-  PCD = EA;                          \
+  PCD = EA;                       \
 }
 
 /***************************************************************
@@ -723,15 +718,15 @@ INLINE UINT32 ARG16(void)
  ***************************************************************/
 #define CALL_COND(cond, opcode) { \
   if (cond)                       \
-  {                              \
-    EA = ARG16();                      \
+  {                               \
+    EA = ARG16();                 \
     MEMPTR = EA;                  \
     PUSH(pc);                     \
-    PCD = EA;                        \
+    PCD = EA;                     \
     CC(ex, opcode);               \
-  }                              \
+  }                               \
   else                            \
-  {                              \
+  {                               \
     MEMPTR = ARG16();  /* implicit call PC+=2;   */ \
   }                               \
 }
@@ -741,7 +736,7 @@ INLINE UINT32 ARG16(void)
  ***************************************************************/
 #define RET_COND(cond, opcode) do { \
   if (cond)                         \
-  {                              \
+  {                                 \
     POP(pc);                        \
     MEMPTR = PC;                    \
     CC(ex, opcode);                 \
@@ -753,19 +748,19 @@ INLINE UINT32 ARG16(void)
  ***************************************************************/
 #define RETN do { \
   LOG(("Z80 #%d RETN IFF1:%d IFF2:%d\n", cpu_getactivecpu(), IFF1, IFF2)); \
-  POP( pc );                          \
+  POP( pc ); \
   MEMPTR = PC; \
-  IFF1 = IFF2;                        \
+  IFF1 = IFF2; \
 } while (0)
 
 /***************************************************************
  * RETI
  ***************************************************************/
-#define RETI  {                        \
-  POP( pc );                          \
+#define RETI { \
+  POP( pc ); \
   MEMPTR = PC; \
 /* according to http://www.msxnet.org/tech/z80-documented.pdf */ \
-  IFF1 = IFF2;                        \
+  IFF1 = IFF2; \
 }
 
 /***************************************************************
@@ -830,47 +825,47 @@ INLINE UINT8 DEC(UINT8 value)
 /***************************************************************
  * RLCA
  ***************************************************************/
-#define RLCA                          \
-  A = (A << 1) | (A >> 7);                  \
-  F = (F & (SF | ZF | PF)) | (A & (YF | XF | CF))
+#define RLCA                                        \
+  A = (A << 1) | (A >> 7);                          \
+  F = (F & (SF | ZF | PF)) | (A & (YF | XF | CF))   
 
 /***************************************************************
  * RRCA
  ***************************************************************/
-#define RRCA                          \
-  F = (F & (SF | ZF | PF)) | (A & CF);            \
-  A = (A >> 1) | (A << 7);                  \
-  F |= (A & (YF | XF) )
+#define RRCA                                        \
+  F = (F & (SF | ZF | PF)) | (A & CF);              \
+  A = (A >> 1) | (A << 7);                          \
+  F |= (A & (YF | XF) )                             
 
 /***************************************************************
  * RLA
  ***************************************************************/
-#define RLA {                          \
-  UINT8 res = (A << 1) | (F & CF);              \
-  UINT8 c = (A & 0x80) ? CF : 0;                \
-  F = (F & (SF | ZF | PF)) | c | (res & (YF | XF));      \
-  A = res;                          \
+#define RLA {                          				\
+  UINT8 res = (A << 1) | (F & CF);                  \
+  UINT8 c = (A & 0x80) ? CF : 0;                    \
+  F = (F & (SF | ZF | PF)) | c | (res & (YF | XF)); \
+  A = res;                          				\
 }
 
 /***************************************************************
  * RRA
  ***************************************************************/
-#define RRA {                          \
-  UINT8 res = (A >> 1) | (F << 7);              \
-  UINT8 c = (A & 0x01) ? CF : 0;                \
-  F = (F & (SF | ZF | PF)) | c | (res & (YF | XF));      \
-  A = res;                          \
+#define RRA {                                       \
+  UINT8 res = (A >> 1) | (F << 7);                  \
+  UINT8 c = (A & 0x01) ? CF : 0;                    \
+  F = (F & (SF | ZF | PF)) | c | (res & (YF | XF)); \
+  A = res;                                          \
 }
 
 /***************************************************************
  * RRD
  ***************************************************************/
-#define RRD {                          \
-  UINT8 n = RM(HL);                      \
+#define RRD {                                       \
+  UINT8 n = RM(HL);                                 \
   MEMPTR = HL+1;                                    \
-  WM( HL, (n >> 4) | (A << 4) );                \
-  A = (A & 0xf0) | (n & 0x0f);                \
-  F = (F & CF) | SZP[A];                    \
+  WM( HL, (n >> 4) | (A << 4) );                    \
+  A = (A & 0xf0) | (n & 0x0f);                      \
+  F = (F & CF) | SZP[A];                            \
 }
 
 /***************************************************************
@@ -947,10 +942,11 @@ INLINE UINT8 DEC(UINT8 value)
   hf = F & HF;                        \
   lo = A & 15;                        \
   hi = A / 16;                        \
+                                \
   if (cf)                            \
     diff = (lo <= 9 && !hf) ? 0x60 : 0x66;          \
   else if (lo >= 10)                      \
-      diff = hi <= 8 ? 0x06 : 0x66;            \
+    diff = hi <= 8 ? 0x06 : 0x66;            \
   else if (hi >= 10)                    \
         diff = hf ? 0x66 : 0x60;            \
       else                        \
@@ -965,68 +961,68 @@ INLINE UINT8 DEC(UINT8 value)
 /***************************************************************
  * AND  n
  ***************************************************************/
-#define AND(value)                        \
-  A &= value;                          \
-  F = SZP[A] | HF
+#define AND(value)    \
+  A &= value;         \
+  F = SZP[A] | HF     
 
 /***************************************************************
  * OR  n
  ***************************************************************/
-#define OR(value)                        \
-  A |= value;                          \
-  F = SZP[A]
+#define OR(value)     \
+  A |= value;         \
+  F = SZP[A]          
 
 /***************************************************************
  * XOR  n
  ***************************************************************/
-#define XOR(value)                        \
-  A ^= value;                          \
-  F = SZP[A]
+#define XOR(value)    \
+  A ^= value;         \
+  F = SZP[A]          
 
 /***************************************************************
  * CP  n
  ***************************************************************/
 #define CP(value) {                         \
-  unsigned val = value;                    \
-  UINT32 ah = AFD & 0xff00;                  \
-  UINT32 res = (UINT8)((ah >> 8) - val);            \
-  F = (SZHVC_sub[ah | res] & ~(YF | XF)) |          \
-    (val & (YF | XF));                    \
+  unsigned val = value;                     \
+  UINT32 ah = AFD & 0xff00;                 \
+  UINT32 res = (UINT8)((ah >> 8) - val);    \
+  F = (SZHVC_sub[ah | res] & ~(YF | XF)) |  \
+    (val & (YF | XF));                      \
 }
 
 /***************************************************************
  * EX  AF,AF'
  ***************************************************************/
-#define EX_AF {                         \
-  PAIR tmp;                          \
-  tmp = Z80.af; Z80.af = Z80.af2; Z80.af2 = tmp;        \
+#define EX_AF {                                   \
+  PAIR tmp;                                       \
+  tmp = Z80.af; Z80.af = Z80.af2; Z80.af2 = tmp;  \
 }
 
 /***************************************************************
  * EX  DE,HL
  ***************************************************************/
-#define EX_DE_HL {                        \
-  PAIR tmp;                          \
-  tmp = Z80.de; Z80.de = Z80.hl; Z80.hl = tmp;        \
+#define EX_DE_HL {                              \
+  PAIR tmp;                                     \
+  tmp = Z80.de; Z80.de = Z80.hl; Z80.hl = tmp;  \
 }
 
 /***************************************************************
  * EXX
  ***************************************************************/
-#define EXX {                          \
-  PAIR tmp;                          \
-  tmp = Z80.bc; Z80.bc = Z80.bc2; Z80.bc2 = tmp;        \
-  tmp = Z80.de; Z80.de = Z80.de2; Z80.de2 = tmp;        \
-  tmp = Z80.hl; Z80.hl = Z80.hl2; Z80.hl2 = tmp;        \
+#define EXX {                                     \
+  PAIR tmp;                                       \
+  tmp = Z80.bc; Z80.bc = Z80.bc2; Z80.bc2 = tmp;  \
+  tmp = Z80.de; Z80.de = Z80.de2; Z80.de2 = tmp;  \
+  tmp = Z80.hl; Z80.hl = Z80.hl2; Z80.hl2 = tmp;  \
 }
 
 /***************************************************************
  * EX  (SP),r16
  ***************************************************************/
-#define EXSP(DR)                        \
-{                                \
-  PAIR tmp = { { 0, 0, 0, 0 } };                \
-  RM16( SPD, &tmp );                      \
+#define EXSP(DR)                  \
+{                                 \
+  PAIR tmp = { { 0, 0, 0, 0 } };  \
+  RM16( SPD, &tmp );              \
   WM16( SPD, &Z80.DR );                    \
   Z80.DR = tmp;                        \
   MEMPTR = Z80.DR.d;                       \

@@ -124,30 +124,33 @@ int parse_file(const char *filename, int *argc, char **argv)
   
 void set_option_defaults(void)
 {
-  option.joy_driver   =   JOY_TYPE_NONE;
-  option.video_driver =   GFX_AUTODETECT;
-  option.video_depth  =   8;
-  option.video_width  =   320;
-  option.video_height =   240;
-  option.no_vga     =   0;
-  option.no_mmx     =   0;
-  option.expand     =   0;
-  option.blur     =   0;
-  option.scale    =   1;
-  option.scanlines  =   0;
-  option.tweak    =   0;
-  option.vsync    =   0;
-  option.throttle   =   0;
-  option.fps      =   0;
-  option.sound    =   0;
-  option.sndcard    =   -1;
-  option.sndrate    =   44100;
-  option.country    =   0;
-  option.console		=	0;
-  option.fm_enable	=	0;
-  option.fm_which		= SND_YM2413;
-  option.codies		=	-1;
-  option.overscan		=	0;
+  option.joy_driver   = JOY_TYPE_NONE;
+  option.video_driver = GFX_AUTODETECT;
+  option.video_depth  = 8;
+  option.video_width  = 320;
+  option.video_height = 240;
+  option.no_vga       = 0;
+  option.no_mmx       = 0;
+  option.expand       = 0;
+  option.blur         = 0;
+  option.scale        = 1;
+  option.scanlines    = 0;
+  option.tweak        = 0;
+  option.vsync        = 1;
+  option.throttle     = 0;
+  option.fps          = 1;
+  option.sound        = 0;
+  option.sndcard      = -1;
+  option.sndrate      = 44100;
+  option.country      = 0;
+  option.console      = 0;
+  option.fm_enable    = 0;
+  option.fm_which     = SND_YM2413;
+  option.overscan     = 1;
+  option.ntsc         = 0;
+  option.use_bios     = 0;
+  option.spritelimit  = 1;
+  option.extra_gg     = 0;
 }
 
 /* Parse argument list */
@@ -268,11 +271,6 @@ void parse_args(int argc, char **argv)
     if(stricmp(argv[i], "-throttle") == 0)
     {
       option.throttle = 1;
-    }
-
-    if(stricmp(argv[i], "-codies") == 0)
-    {
-      option.codies = 1;
     }
   }
 }

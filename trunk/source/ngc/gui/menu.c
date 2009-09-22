@@ -420,6 +420,7 @@ void sysmenu ()
     else if (option.console == 3) sprintf (miscmenu[2], "Console -     GG");
     else if (option.console == 4) sprintf (miscmenu[2], "Console - GG-SMS");
     else if (option.console == 5) sprintf (miscmenu[2], "Console - SG1000");
+    else if (option.console == 6) sprintf (miscmenu[2], "Console - COLECO");
     else sprintf (miscmenu[2], "Console -   AUTO");
         
     sprintf (miscmenu[3], "Sprite Limit: %s", option.spritelimit ? " ON" : "OFF");
@@ -464,7 +465,7 @@ void sysmenu ()
 
       case 2:  /*** Console Type ***/
         option.console ++;
-        if (option.console > 5) option.console = 0;
+        if (option.console > 6) option.console = 0;
         set_config();
         system_init();
         break;

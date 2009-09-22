@@ -452,3 +452,48 @@ void sio_w(int offset, int data)
       return;
   }
 }
+
+/* Colecovision I/O chip support */
+static uint8 keymask[12] = 
+{
+  0x7a, /* 0 */
+  0x7d, /* 1 */
+  0x77, /* 2 */
+  0x7c, /* 3 */
+  0x72, /* 4 */
+  0x73, /* 5 */
+  0x7e, /* 6 */
+  0x75, /* 7 */
+  0x71, /* 8 */
+  0x7b, /* 9 */
+  0x76, /* # */
+  0x79  /* * */
+};
+
+uint8 coleco_pio_r(int port)
+{
+  uint8 temp = 0x7f;
+
+  if (coleco.pio_mode)
+  {
+    /* Joystick  */
+    if(input.pad[port] & INPUT_UP) temp &= ~1;
+    else if(input.pad[port] & INPUT_DOWN) temp &= ~4;
+    if(input.pad[port] & INPUT_LEFT) temp &= ~8;
+    else if(input.pad[port] & INPUT_RIGHT) temp &= ~2;
+
+    /* Left Button */
+    if(input.pad[port] & INPUT_BUTTON2) temp &= ~0x40;
+  }
+  else
+  {
+    /* KeyPad (0-9,*,#) */
+    if (coleco.keypad[port] < 12)
+     temp = keymask[coleco.keypad[port]];
+
+    /* Right Button */
+    if(input.pad[port] & INPUT_BUTTON1) temp &= ~0x40;
+  }
+
+  return temp;
+}

@@ -31,6 +31,9 @@ sms_t sms;
 bios_t bios;
 slot_t slot;
 
+/* Colecovision support */
+t_coleco coleco;
+
 uint8 dummy_write[0x400];
 uint8 dummy_read[0x400];
 
@@ -102,17 +105,21 @@ void sms_init(void)
   data_bus_pullup   = 0x00;
   data_bus_pulldown = 0x00;
 
-  /* FM unit */
-  sms.use_fm = option.fm_enable;
-
-  /* Initialize selected console emulation */
+  /* Initialize port handlers */
   switch(sms.console)
   {
+    case CONSOLE_COLECO:
+      cpu_writeport16 = coleco_port_w;
+      cpu_readport16 = coleco_port_r;
+      data_bus_pullup = 0xFF;
+      break;
+
     case CONSOLE_SG1000:
     case CONSOLE_SC3000:
     case CONSOLE_SF7000:
       cpu_writeport16 = tms_port_w;
       cpu_readport16 = tms_port_r;
+      data_bus_pullup = 0xFF;
       break;
 
     case CONSOLE_SMS:
@@ -162,12 +169,12 @@ void sms_reset(void)
 {
   int i;
 
-  /* Reset Z80 state */
+  /* reset Z80 state */
   z80_reset();
   z80_reset_cycle_count();
   z80_set_irq_line (0, CLEAR_LINE);
 
-  /* Clear SMS context */
+  /* clear SMS context */
   memset(dummy_write,data_bus_pullup, sizeof(dummy_write));
   memset(dummy_read,data_bus_pullup, sizeof(dummy_read));
   memset(sms.wram,0, sizeof(sms.wram));
@@ -176,99 +183,140 @@ void sms_reset(void)
   sms.fm_detect = 0x00;
   sms.ioctrl    = 0xFF;
   sms.hlatch    = 0x00;
+  sms.memctrl   = 0xAB;
 
-  /* reset BIOS paging */
-  bios.fcr[0] = 0;
-  bios.fcr[1] = 0;
-  bios.fcr[2] = 1;
-  bios.fcr[3] = 2;
+  /* enable Cartridge ROM by default*/
+  slot.rom      = cart.rom;
+  slot.pages    = cart.pages;
+  slot.mapper   = cart.mapper;
+  slot.fcr      = &cart.fcr[0];
 
-  /* reset CART paging */
-  switch(cart.mapper)
+  /* reset Memory Mapping */
+  switch(sms.console)
   {
-    case MAPPER_CODIES:
-    case MAPPER_KOREAN:
-      cart.fcr[0] = 0;
-      cart.fcr[1] = 0;
-      cart.fcr[2] = 1;
-      cart.fcr[3] = 0;
+    case CONSOLE_COLECO:
+    {
+      /* $0000-$1FFF mapped to internal ROM (8K) */
+      for(i = 0x00; i < 0x08; i++)
+      {
+        cpu_readmap[i]  = &coleco.rom[i << 10];
+        cpu_writemap[i] = dummy_write;
+      }
+
+      /* $2000-$5FFF mapped to expansion */
+      for(i = 0x08; i < 0x18; i++)
+      {
+        cpu_readmap[i]  = dummy_read;
+        cpu_writemap[i] = dummy_write;
+      }
+
+      /* $6000-$7FFF mapped to RAM (1K mirrored) */
+      for(i = 0x18; i < 0x20; i++)
+      {
+        cpu_readmap[i]  = &sms.wram[0];
+        cpu_writemap[i] = &sms.wram[0];
+      }
+
+      /* $8000-$FFFF mapped to Cartridge ROM (max. 32K) */
+      for(i = 0x20; i < 0x40; i++)
+      {
+        cpu_readmap[i]  = &cart.rom[(i&0x1F) << 10];
+        cpu_writemap[i] = dummy_write;
+      }
+
       break;
+    }
+
+    case CONSOLE_SG1000:
+    case CONSOLE_SC3000:
+    case CONSOLE_SF7000:
+    {
+      /* $0000-$7FFF mapped to cartridge ROM (max. 32K) */
+      for(i = 0x00; i < 0x20; i++)
+      {
+        cpu_readmap[i]  = &cart.rom[i << 10];
+        cpu_writemap[i] = dummy_write;
+      }
+
+      /* $8000-$BFFF mapped to external RAM (lower 16K) */
+      for(i = 0x20; i < 0x30; i++)
+      {
+        cpu_readmap[i]  = &cart.sram[(i & 0x0F) << 10];
+        cpu_writemap[i] = &cart.sram[(i & 0x0F) << 10];
+      }
+
+      /* $C000-$FFFF mapped to internal RAM (2K) or external RAM (upper 16K) */
+      for(i = 0x30; i < 0x40; i++)
+      {
+        cpu_readmap[i]  = &cart.sram[0x4000 + ((i & 0x0F) << 10)];
+        cpu_writemap[i] = &cart.sram[0x4000 + ((i & 0x0F) << 10)];
+      }
+
+      break;
+    }
 
     default:
-      cart.fcr[0] = 0;
-      cart.fcr[1] = 0;
-      cart.fcr[2] = 1;
-      cart.fcr[3] = 2;
-      break;
-  }
-
-  /* pick default SLOT */
-  if (bios.enabled == 3)
-  {
-    /* Bios ROM */
-    sms.memctrl = 0xE0;
-    slot.rom    = bios.rom;
-    slot.pages  = bios.pages;
-    slot.mapper = MAPPER_SEGA;
-    slot.fcr    = &bios.fcr[0];
-  }
-  else
-  {
-    /* Cartridge ROM */
-    sms.memctrl = 0xAB;
-    slot.rom    = cart.rom;
-    slot.pages  = cart.pages;
-    slot.mapper = cart.mapper;
-    slot.fcr    = &cart.fcr[0];
-    cart.loaded = 1;
-
-    /* save Memory Control register value */
-    if (IS_SMS)
     {
-      sms.wram[0] = sms.memctrl;
+      /* reset Cartridge paging */
+      switch(cart.mapper)
+      {
+        case MAPPER_CODIES:
+        case MAPPER_KOREAN:
+          cart.fcr[0] = 0;
+          cart.fcr[1] = 0;
+          cart.fcr[2] = 1;
+          cart.fcr[3] = 0;
+          break;
+
+        default:
+          cart.fcr[0] = 0;
+          cart.fcr[1] = 0;
+          cart.fcr[2] = 1;
+          cart.fcr[3] = 2;
+          break;
+      }
+
+      /* SMS BIOS support */
+      if (IS_SMS)
+      {
+        if (bios.enabled == 3)
+        {
+          /* reset BIOS paging */
+          bios.fcr[0] = 0;
+          bios.fcr[1] = 0;
+          bios.fcr[2] = 1;
+          bios.fcr[3] = 2;
+
+          /* enable BIOS ROM */
+          slot.rom    = bios.rom;
+          slot.pages  = bios.pages;
+          slot.mapper = MAPPER_SEGA;
+          slot.fcr    = &bios.fcr[0];
+          sms.memctrl = 0xE0;
+        }
+        else
+        {
+          /* save Memory Control register value in RAM */
+          sms.wram[0] = sms.memctrl;
+        }
+      }
+
+      /* $0000-$03ff (ROM) */
+      cpu_readmap[0]  = &slot.rom[0];
+      cpu_writemap[0] = dummy_write;
+
+      /* $0400-$FFFF (ROM/RAM)*/
+      sms_mapper_w(0,slot.fcr[0]);
+      sms_mapper_w(1,slot.fcr[1]);
+      sms_mapper_w(2,slot.fcr[2]);
+      sms_mapper_w(3,slot.fcr[3]);
+
+      break;
     }
   }
 
   /* reset SLOT mapper */
   mapper_reset();
-
-  /* reset Memory Map */
-  if (sms.console < CONSOLE_SMS)
-  {
-    /* no mapper (SG-1000, SC-3000, SF-7000) */
-    /* $0000-$7FFF mapped to cartridge ROM (max. 32K) */
-    for(i = 0x00; i <= 0x1F; i++)
-    {
-      cpu_readmap[i]  = &cart.rom[(i << 10)];
-      cpu_writemap[i] = dummy_write;
-    }
-
-    /* $8000-$BFFF mapped to external RAM (lower 16K) */
-    for(i = 0x20; i <= 0x2F; i++)
-    {
-      cpu_readmap[i]  = &cart.sram[((i & 0x0F) << 10)];
-      cpu_writemap[i] = &cart.sram[((i & 0x0F) << 10)];
-    }
-
-    /* $C000-$BFFF mapped to internal RAM (2K) or external RAM (upper 16K) */
-    for(i = 0x30; i <= 0x3F; i++)
-    {
-      cpu_readmap[i]  = &cart.sram[0x4000 + ((i & 0x0F) << 10)];
-      cpu_writemap[i] = &cart.sram[0x4000 + ((i & 0x0F) << 10)];
-    }
-  }
-  else
-  {
-    /* $0000-$03ff (ROM) */
-    cpu_readmap[0]  = &slot.rom[0];
-    cpu_writemap[0] = dummy_write;
-
-    /* $0400-$FFFF (ROM/RAM)*/
-    sms_mapper_w(0,slot.fcr[0]);
-    sms_mapper_w(1,slot.fcr[1]);
-    sms_mapper_w(2,slot.fcr[2]);
-    sms_mapper_w(3,slot.fcr[3]);
-  }
 }
 
 void sms_mapper_w(int address, int data)

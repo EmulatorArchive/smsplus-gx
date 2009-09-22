@@ -62,7 +62,27 @@ void osd_update_inputs(void)
       if(key[KEY_S])          input.pad[0] |= INPUT_BUTTON1;
     }
 
-    //if (sms.device[1] == DEVICE_PAD2B)
+    if (sms.console == CONSOLE_COLECO)
+    {
+      input.system = 0;
+      coleco.keypad[0] = 0xff;
+      coleco.keypad[1] = 0xff;
+
+      if(key[KEY_0])            coleco.keypad[0] = 0;
+      else if(key[KEY_1])       coleco.keypad[0] = 1;
+      else if(key[KEY_2])       coleco.keypad[0] = 2;
+      else if(key[KEY_3])       coleco.keypad[0] = 3;
+      else if(key[KEY_4])       coleco.keypad[0] = 4;
+      else if(key[KEY_5])       coleco.keypad[0] = 5;
+      else if(key[KEY_6])       coleco.keypad[0] = 6;
+      else if(key[KEY_7])       coleco.keypad[0] = 7;
+      else if(key[KEY_8])       coleco.keypad[0] = 8;
+      else if(key[KEY_9])       coleco.keypad[0] = 9;
+      else if(key[KEY_RSHIFT])  coleco.keypad[0] = 10;
+      else if(key[KEY_LSHIFT])  coleco.keypad[0] = 11;
+    }
+
+    if (sms.device[1] == DEVICE_PAD2B)
     {
       /* Player #2 inputs */
       if(key[KEY_8_PAD])

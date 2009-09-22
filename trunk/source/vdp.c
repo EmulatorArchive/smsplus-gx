@@ -81,7 +81,7 @@ void vdp_reset(void)
   /* number of scanlines */
   vdp.lpf = sms.display ? 313 : 262;
 
-  /* VDP registers default values (as set by SMS BIOS) */
+  /* VDP registers default values (usually set by BIOS) */
   if (IS_SMS && (bios.enabled != 3))
   {
     vdp.reg[0]  = 0x36; 
@@ -208,14 +208,6 @@ void viewport_check(void)
 
 void vdp_reg_w(uint8 r, uint8 d)
 {
-  /* value  written after register latch  */
-  /* Xscroll register, maybe others ?     */
-  if (((z80_get_elapsed_cycles() + 1) / CYCLES_PER_LINE) > vdp.line)
-  {
-    /* render next line now BEFORE updating register */
-    render_line((vdp.line+1)%vdp.lpf);
-  }
-
   /* Store register data */
   vdp.reg[r] = d;
 
@@ -271,6 +263,12 @@ void vdp_reg_w(uint8 r, uint8 d)
 void vdp_write(int offset, uint8 data)
 {
   int index;
+
+  if (((z80_get_elapsed_cycles() + 1) / CYCLES_PER_LINE) > vdp.line)
+  {
+    /* render next line now BEFORE updating register */
+    render_line((vdp.line+1)%vdp.lpf);
+  }
 
   switch(offset & 1)
   {
@@ -412,6 +410,12 @@ uint8 vdp_counter_r(int offset)
 void gg_vdp_write(int offset, uint8 data)
 {
   int index;
+
+  if (((z80_get_elapsed_cycles() + 1) / CYCLES_PER_LINE) > vdp.line)
+  {
+    /* render next line now BEFORE updating register */
+    render_line((vdp.line+1)%vdp.lpf);
+  }
 
   switch(offset & 1)
   {

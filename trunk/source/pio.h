@@ -65,5 +65,6 @@ extern void pio_ctrl_w(uint8 data);
 extern uint8 pio_port_r(int offset);
 extern void sio_w(int offset, int data);
 extern uint8 sio_r(int offset);
+extern uint8 coleco_pio_r(int port);
 
 #endif /* _PIO_H_ */

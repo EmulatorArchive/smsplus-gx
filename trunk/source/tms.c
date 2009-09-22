@@ -168,28 +168,64 @@ void render_obj_tms(int line)
             case 0: /* 8x8 */
                 for(x = start; x < end; x++) {
                     if(ex[0][x])
+                    {
+                        /* Check sprite collision */
+                        if ((lb[x] & 0x40) && !(vdp.status & 0x20))
+                        {
+                            /* pixel-accurate SPR_COL flag */
+                            vdp.status |= 0x20;
+                            vdp.spr_col = (line << 8) | ((p->xpos + x + 13) >> 1);
+                        }
                         lb[x] = lut[lb[x]];
+                    }
                 }
                 break;
 
             case 1: /* 8x8 zoomed */
                 for(x = start; x < end; x++) {                   
                     if(ex[0][x >> 1])
+                    {
+                        /* Check sprite collision */
+                        if ((lb[x] & 0x40) && !(vdp.status & 0x20))
+                        {
+                            /* pixel-accurate SPR_COL flag */
+                            vdp.status |= 0x20;
+                            vdp.spr_col = (line << 8) | ((p->xpos + x + 13) >> 1);
+                        }
                         lb[x] = lut[lb[x]];
+                    }
                 }
                 break;
 
             case 2: /* 16x16 */
                 for(x = start; x < end; x++) {
                     if(ex[(x >> 3) & 1][x & 7])
+                    {
+                        /* Check sprite collision */
+                        if ((lb[x] & 0x40) && !(vdp.status & 0x20))
+                        {
+                            /* pixel-accurate SPR_COL flag */
+                            vdp.status |= 0x20;
+                            vdp.spr_col = (line << 8) | ((p->xpos + x + 13) >> 1);
+                        }
                         lb[x] = lut[lb[x]];
+                    }
                 }
                 break;
 
             case 3: /* 16x16 zoomed */
                 for(x = start; x < end; x++) {
                     if(ex[(x >> 4) & 1][(x >> 1) & 7])
+                    {
+                        /* Check sprite collision */
+                        if ((lb[x] & 0x40) && !(vdp.status & 0x20))
+                        {
+                            /* pixel-accurate SPR_COL flag */
+                            vdp.status |= 0x20;
+                            vdp.spr_col = (line << 8) | ((p->xpos + x + 13) >> 1);
+                        }
                         lb[x] = lut[lb[x]];
+                    }
                 }
                 break;
         }
