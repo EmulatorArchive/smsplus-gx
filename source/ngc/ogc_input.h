@@ -31,7 +31,16 @@
 /* number of configurable keys */
 #define MAX_KEYS 5
 
+typedef struct 
+{
+  char msg[16];
+  u32 frames;
+} t_osd;
+
+
 extern int ConfigRequested;
+extern t_osd osd;
+
 extern u16 pad_keymap[MAX_INPUTS][MAX_KEYS];
 #ifdef HW_RVL
 extern u32 wpad_keymap[MAX_INPUTS*3][MAX_KEYS];
