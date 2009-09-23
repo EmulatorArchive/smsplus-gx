@@ -278,6 +278,14 @@ static void framestart(u32 retraceCnt)
 {
   /* simply increment the tick counter */
   frameticker++;
+
+  /* display OSD messages */
+  if (osd.frames)
+  {
+    osd.frames--;
+    write_font(300, option.render ? 400:200, osd.msg);
+  }
+
 }
 
 /* Initialize GX */
@@ -518,6 +526,9 @@ void ogc_video__update()
     /* final offset */
     shift   = (bitmap.width - vwidth) / 4;
 
+    /* reset scaler (height has changed) */
+    gxScale();
+   
     /* reinitialize texture */
     GX_InitTexObj (&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 

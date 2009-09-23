@@ -466,8 +466,8 @@ static uint8 keymask[12] =
   0x75, /* 7 */
   0x71, /* 8 */
   0x7b, /* 9 */
-  0x76, /* # */
-  0x79  /* * */
+  0x79, /* * */
+  0x76  /* # */
 };
 
 uint8 coleco_pio_r(int port)
@@ -483,7 +483,7 @@ uint8 coleco_pio_r(int port)
     else if(input.pad[port] & INPUT_RIGHT) temp &= ~2;
 
     /* Left Button */
-    if(input.pad[port] & INPUT_BUTTON2) temp &= ~0x40;
+    if(input.pad[port] & INPUT_BUTTON1) temp &= ~0x40;
   }
   else
   {
@@ -492,7 +492,7 @@ uint8 coleco_pio_r(int port)
      temp = keymask[coleco.keypad[port]];
 
     /* Right Button */
-    if(input.pad[port] & INPUT_BUTTON1) temp &= ~0x40;
+    if(input.pad[port] & INPUT_BUTTON2) temp &= ~0x40;
   }
 
   return temp;

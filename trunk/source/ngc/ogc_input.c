@@ -37,6 +37,7 @@
 #define KEY_MENU    4
 
 int ConfigRequested = 1;
+t_osd osd;
 
 static const char *keys_name[MAX_KEYS] =
 {
@@ -270,12 +271,25 @@ static void pad_update()
     /* Colecovision support */
     if (sms.console == CONSOLE_COLECO)
     {
+      u16 pad;
+      u16 d = PAD_ButtonsDown(i);
       input.system = 0;
 
-      coleco.keypad[i] &= 0x0f;
-      if (p & PAD_TRIGGER_R) coleco.keypad[i]++;
-      if (coleco.keypad[i] > 11) coleco.keypad[i] = 0;
-      if (!(p & PAD_TRIGGER_L)) coleco.keypad[i] |= 0xf0;
+      if (d & PAD_TRIGGER_R)
+      {
+        pad = (coleco.keypad[i] & 0x0f) + 1;
+        if (pad > 11) pad = 0;
+        if (pad == 11)
+          sprintf(osd.msg,"KeyPad(%d) #",i+1);
+        else if (pad == 10) 
+          sprintf(osd.msg,"KeyPad(%d) *",i+1);
+        else  sprintf(osd.msg,"KeyPad(%d) %d",i+1,pad);
+        osd.frames = 30;
+        coleco.keypad[i] = (coleco.keypad[i] & 0xf0) | pad;
+      }
+
+      if (p & PAD_TRIGGER_L)
+        coleco.keypad[i] &= 0x0f;
     }
   }
 }
@@ -552,15 +566,63 @@ static void wpad_update(void)
       /* Colecovision keypad support */
       if (sms.console == CONSOLE_COLECO)
       {
+        u32 pad;
+        u32 d = WPAD_ButtonsDown(i);
+
         input.system = 0;
+        if (d & WPAD_CLASSIC_BUTTON_PLUS)
+        {
+          pad = (coleco.keypad[i] & 0x0f) + 1;
+          if (pad > 11) pad = 0;
+          if (pad == 11)
+            sprintf(osd.msg,"KeyPad(%d) #",i+1);
+          else if (pad == 10) 
+            sprintf(osd.msg,"KeyPad(%d) *",i+1);
+          else  sprintf(osd.msg,"KeyPad(%d) %d",i+1,pad);
+          osd.frames = 60;
+          coleco.keypad[i] = (coleco.keypad[i] & 0xf0) | pad;
+        }
 
-        coleco.keypad[i] &= 0x0f;
-        if ((p & WPAD_CLASSIC_BUTTON_PLUS) || (p & WPAD_BUTTON_PLUS))
-          coleco.keypad[i]++;
-        if (coleco.keypad[i] > 11) coleco.keypad[i] = 0;
+        if (p & WPAD_CLASSIC_BUTTON_MINUS)
+          coleco.keypad[i] &= 0x0f;
 
-        if (!(p & WPAD_CLASSIC_BUTTON_MINUS) && !(p & WPAD_BUTTON_MINUS))
-          coleco.keypad[i] |= 0xf0;
+        if (use_wpad)
+        {
+          if (d & WPAD_BUTTON_PLUS)
+          {
+            pad = (coleco.keypad[1] & 0x0f) + 1;
+            if (pad > 11) pad = 0;
+            if (pad == 11)
+              sprintf(osd.msg,"KeyPad(2) #");
+            else if (pad == 10) 
+              sprintf(osd.msg,"KeyPad(2) *");
+            else
+              sprintf(osd.msg,"KeyPad(2) %d",pad);
+            osd.frames = 60;
+            coleco.keypad[1] = (coleco.keypad[1] & 0xf0) | pad;
+          }
+
+          if (p & WPAD_BUTTON_MINUS)
+            coleco.keypad[1] &= 0x0f;
+        }
+        else
+        {
+          if (d & WPAD_BUTTON_PLUS)
+          {
+            pad = (coleco.keypad[i] & 0x0f) + 1;
+            if (pad > 11) pad = 0;
+            if (pad == 11)
+              sprintf(osd.msg,"KeyPad(%d) #",i+1);
+            else if (pad == 10) 
+              sprintf(osd.msg,"KeyPad(%d) *",i+1);
+            else  sprintf(osd.msg,"KeyPad(%d) %d",i+1,pad);
+            osd.frames = 30;
+            coleco.keypad[i] = (coleco.keypad[i] & 0xf0) | pad;
+          }
+
+          if (p & WPAD_BUTTON_MINUS)
+            coleco.keypad[i] &= 0x0f;
+        }
       }
     }
   }
@@ -588,6 +650,8 @@ void ogc_input__init(void)
 void ogc_input__update(void)
 {
   /* reset inputs */
+  coleco.keypad[0] |= 0xf0;
+  coleco.keypad[1] |= 0xf0;
   input.pad[0] = 0;
   input.pad[1] = 0;
   input.system = 0;
