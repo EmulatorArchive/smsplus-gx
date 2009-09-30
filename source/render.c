@@ -376,7 +376,7 @@ void render_line(int line)
   if (!(vdp.reg[1] & 0x40))
   {
     /* blanked line */
-    memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w);
+    memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
   }
   else
   {
@@ -401,13 +401,13 @@ void render_line(int line)
       /* Blank leftmost column of display */
       if(vdp.reg[0] & 0x20) memset(linebuf, BACKDROP_COLOR, 8);
     }
-  }
 
-  /* Horizontal borders */
-  if (option.overscan)
-  {
-    memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
-    memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
+    /* Horizontal borders */
+    if (option.overscan)
+    {
+      memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
+      memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
+    }
   }
 
   /* parse Sprites (line N+1) */
