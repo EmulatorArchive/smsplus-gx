@@ -105,15 +105,7 @@ void system_frame(int skip_render)
       vdp.vint_pending = 1;
       if(vdp.reg[0x01] & 0x20)
       {
-        if (sms.console == CONSOLE_COLECO)
-        {
-          z80_set_irq_line(INPUT_LINE_NMI, ASSERT_LINE);
-          z80_set_irq_line(INPUT_LINE_NMI, CLEAR_LINE);
-        }
-        else
-        {
-          z80_set_irq_line(0, ASSERT_LINE);
-        }
+        z80_set_irq_line(vdp.irq, ASSERT_LINE);
       }
     }
 
