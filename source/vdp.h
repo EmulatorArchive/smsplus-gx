@@ -47,9 +47,9 @@ typedef struct
     uint8 status;
     uint8 latch;
     uint8 pending;
-    uint8 buffer;
-    uint8 code;
     uint16 addr;
+    uint8 code;
+    uint8 buffer;
     int pn, ct, pg, sa, sg;
     int ntab;
     int satb;
@@ -59,12 +59,13 @@ typedef struct
     uint8 height;
     uint8 extended;
     uint8 mode;
+    uint8 irq;
     uint8 vint_pending;
     uint8 hint_pending;
     uint16 cram_latch;
-    uint8 bd;
-    uint8 spr_ovr;
     uint16 spr_col;
+    uint8 spr_ovr;
+    uint8 bd;
 } vdp_t;
 
 /* Global data */

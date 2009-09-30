@@ -64,7 +64,7 @@ static uint8 lut[0x10000];
 
 static uint8 object_index_count;
 
-/* CRAM palette in TMS modes */
+/* CRAM palette in TMS compatibility mode */
 static const uint8 tms_crom[] =
 {
   0x00, 0x00, 0x08, 0x0C,
@@ -73,7 +73,7 @@ static const uint8 tms_crom[] =
   0x04, 0x33, 0x15, 0x3F
 };
 
-/* TODO: implement original TMS palette for SG-1000 & Colecovision */
+/* original TMS palette for SG-1000 & Colecovision */
 static uint8 tms_palette[16*3][3] =
 {
   /* from Sean Young (http://www.smspower.org/dev/docs/tms9918a.txt) */

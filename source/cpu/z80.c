@@ -564,12 +564,12 @@ INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
 /***************************************************************
  * Leave HALT state; write 0 to fake port
  ***************************************************************/
-#define LEAVE_HALT {                      \
-  if( HALT )                          \
-  {                              \
-    HALT = 0;                        \
-    PC++;                          \
-  }                              \
+#define LEAVE_HALT {                          \
+  if( HALT )                                  \
+  {                                           \
+    HALT = 0;                                 \
+    PC++;                                     \
+  }                                           \
 }
 
 /***************************************************************

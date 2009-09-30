@@ -26,7 +26,7 @@
 #define _STATE_H_
 
 
-#define STATE_VERSION   0x0103      /* Version 1.3 (BCD) */
+#define STATE_VERSION   0x0104      /* Version 1.4 (BCD) */
 #define STATE_HEADER    "SST\0"     /* State file header */
 
 /* Function prototypes */

@@ -94,6 +94,12 @@ void vdp_reset(void)
     vdp.reg[10] = 0xFF;
   }
 
+  /* VDP interrupt */
+  if (sms.console == CONSOLE_COLECO)
+    vdp.irq = INPUT_LINE_NMI;
+  else
+    vdp.irq = INPUT_LINE_IRQ0;
+
   /* reset VDP viewport */
   viewport_check();
 
@@ -226,8 +232,8 @@ void vdp_reg_w(uint8 r, uint8 d)
     case 0x01: /* Mode Control No. 2 */
       if(vdp.vint_pending)
       {
-        if(d & 0x20) z80_set_irq_line(0, ASSERT_LINE);
-        else z80_set_irq_line(0, CLEAR_LINE);
+        if(d & 0x20) z80_set_irq_line(vdp.irq, ASSERT_LINE);
+        else z80_set_irq_line(vdp.irq, CLEAR_LINE);
       }
       viewport_check();
       break;
@@ -365,13 +371,12 @@ uint8 vdp_read(int offset)
       vdp.pending = 0;
       vdp.vint_pending = 0;
       vdp.hint_pending = 0;
-      z80_set_irq_line(0, CLEAR_LINE);
+      z80_set_irq_line(vdp.irq, CLEAR_LINE);
 
       /* cycle-accurate SPR_COL flag */
       if (temp & 0x20)
       {
         uint8 hc = hc_256[(cyc + 1) % CYCLES_PER_LINE];
-        error("SPR COllision: line=%d, hc=0x%02x(0x%02x)\n", vdp.spr_col >> 8,vdp.spr_col & 0xff, hc);
         if ((line == (vdp.spr_col >> 8)) && ((hc < (vdp.spr_col & 0xff)) || (hc > 0xf3)))
         {
           vdp.status |= 0x20;
