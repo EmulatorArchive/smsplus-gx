@@ -202,9 +202,9 @@ GXRModeObj *tvmodes[4] = {
 
 typedef struct tagcamera
 {
-  Vector pos;
-  Vector up;
-  Vector view;
+  guVector pos;
+  guVector up;
+  guVector view;
 } camera;
 
 /*** Square Matrix
