@@ -35,6 +35,7 @@ void system_frame(int skip_render)
 {
   int iline;
 
+  /* adjust Z80 cycle count from previous frame */
   z80_cycle_count -= line_z80;
   line_z80 = 0;
 
@@ -72,7 +73,7 @@ void system_frame(int skip_render)
   /* reset collision flag infos */
   vdp.spr_col = 0xff00;
 
-  for(vdp.line = 0; vdp.line < vdp.lpf;)
+  for(vdp.line = 0; vdp.line < vdp.lpf; vdp.line++)
   {
     iline = vdp.height;
 
@@ -83,6 +84,7 @@ void system_frame(int skip_render)
 
     line_z80 += CYCLES_PER_LINE;
 
+    /* Horizontal Interrupt */
     if (sms.console >= CONSOLE_SMS)
     {
       if(vdp.line <= iline)
@@ -93,13 +95,24 @@ void system_frame(int skip_render)
           vdp.hint_pending = 1;
           if(vdp.reg[0x00] & 0x10)
           {
+            /* IRQ line is latched between instructions, on instruction last cycle          */
+            /* This means that if Z80 cycle count is exactly a multiple of CYCLES_PER_LINE, */
+            /* interrupt would be triggered  AFTER the next instruction.                    */
+            if (!(z80_get_elapsed_cycles()%CYCLES_PER_LINE))
+              z80_execute(1);
+              
             z80_set_irq_line(0, ASSERT_LINE);
           }
         }
       }
     }
 
-    if(vdp.line == (iline + 1))
+    z80_execute(line_z80 - z80_cycle_count);
+
+    sound_update(vdp.line);
+
+    /* Vertical Interrupt */
+    if(vdp.line == iline)
     {
       vdp.status |= 0x80;
       vdp.vint_pending = 1;
@@ -108,12 +121,6 @@ void system_frame(int skip_render)
         z80_set_irq_line(vdp.irq, ASSERT_LINE);
       }
     }
-
-    z80_execute(line_z80 - z80_cycle_count);
-
-    sound_update(vdp.line);
-
-    ++vdp.line;
   }
 }
 
