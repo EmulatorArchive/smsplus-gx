@@ -125,6 +125,8 @@
 
 #define VERBOSE 0
 
+#define INLINE static __inline__
+
 #if VERBOSE
 #define LOG(x)  logerror x
 #else

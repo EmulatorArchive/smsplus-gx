@@ -46,7 +46,6 @@ extern void render_reset(void);
 extern void render_line(int line);
 extern void render_bg_sms(int line);
 extern void render_obj_sms(int line);
-extern void parse_satb(int line);
 extern void palette_sync(int index);
 
 #endif /* _RENDER_H_ */

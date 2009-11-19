@@ -3,7 +3,6 @@
 
 #include "cpuintrf.h"
 
-#define INLINE static __inline__
 
 enum
 {

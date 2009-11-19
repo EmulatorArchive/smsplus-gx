@@ -57,10 +57,6 @@ void system_frame(int skip_render)
   /* reset TMS Text offset counter */
   text_counter = 0;
 
-  /* End of frame, parse sprites for line 0 on line 261 (VCount=$FF) */
-  if(vdp.mode <= 7) parse_line(0);
-  else  parse_satb(0);
-
   /* 3D glasses faking */
   if (sms.glasses_3d) skip_render = sms.wram[0x1ffb];
 
