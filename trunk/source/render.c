@@ -143,6 +143,7 @@ static const uint32 atex[4] =
 /* Bitplane to packed pixel LUT */
 static uint32 bp_lut[0x10000];
 
+static void parse_satb(int line);
 static void update_bg_pattern_cache(void);
 static void remap_8_to_16(int line);
 
@@ -355,8 +356,8 @@ void render_line(int line)
   /* Viewport Line index (including vertical borders) */
   int vline  = (line + bitmap.viewport.y - ((vdp.height - bitmap.viewport.h)/2)) % vdp.lpf;
   
-  /* Ensure we're within the viewport range */
-  if ((vline < 0) || (vline >= ((2 * bitmap.viewport.y) + bitmap.viewport.h))) return;
+  /* Ensure we're within the VDP active area (including overscan) */
+  if ((vline < 0) || (vline >= (sms.display ? 294 : 243))) return;
 
   /* Point to current line in output buffer */
 #ifdef NGC
@@ -366,25 +367,28 @@ void render_line(int line)
   else linebuf = &internal_buffer[option.overscan ? 14:0];
 #endif
 
-  /* Sprite Limit */
+  /* Sprite limit flag is set at the beginning of the line */
   if (vdp.spr_ovr)
   {
     vdp.spr_ovr = 0;
     vdp.status |= 0x40;
   }
 
+  /* Display disabled ? */
   if (!(vdp.reg[1] & 0x40))
   {
-    /* blanked line */
+    /* Display background color */
     memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
   }
   else
   {
-    /* vertical borders */
+    /* Vertical borders ? */
     if ((vline < bitmap.viewport.y) || (vline >= bitmap.viewport.h + bitmap.viewport.y))
     {
-      /* sprites are still processed */
+      /* Sprites are still processed offscreen */
       if (vdp.mode > 7) render_obj(line);
+
+      /* Display background color */
       memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w);
     }
     else
@@ -405,14 +409,15 @@ void render_line(int line)
     /* Horizontal borders */
     if (option.overscan)
     {
+      /* Display background color */
       memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
       memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
     }
   }
 
-  /* parse Sprites (line N+1) */
-  if (vdp.mode > 7) parse_satb(line+1);
-  else parse_line(line+1);
+  /* Parse Sprites for next line */
+  if (vdp.mode > 7) parse_satb((line+1) % vdp.lpf);
+  else parse_line((line+1) % vdp.lpf);
 
   /* LightGun mark */
   if (sms.device[0] == DEVICE_LIGHTGUN)
@@ -433,14 +438,17 @@ void render_line(int line)
     }
   }
 
+  /* Only draw lines within the video output range ! */
+  if (vline < (bitmap.viewport.h + 2*bitmap.viewport.y))
+  {
 #ifdef NGC
-  if (option.ntsc)  sms_ntsc_blit(&sms_ntsc, ( SMS_NTSC_IN_T const * )pixel, internal_buffer, bitmap.viewport.w + 2*bitmap.viewport.x, vline);
-  else remap_8_to_16(vline);
+    if (option.ntsc)  sms_ntsc_blit(&sms_ntsc, ( SMS_NTSC_IN_T const * )pixel, internal_buffer, bitmap.viewport.w + 2*bitmap.viewport.x, vline);
+    else remap_8_to_16(vline);
 #else
-  if(bitmap.depth != 8) remap_8_to_16(vline);
+    if(bitmap.depth != 8) remap_8_to_16(vline);
 #endif
+  }
 }
-
 
 /* Draw the Master System background */
 void render_bg_sms(int line)
@@ -708,7 +716,7 @@ void palette_sync(int index)
 }
 
 
-void parse_satb(int line)
+static void parse_satb(int line)
 {
   /* Pointer to sprite attribute table */
   uint8 *st = (uint8 *)&vdp.vram[vdp.satb];
