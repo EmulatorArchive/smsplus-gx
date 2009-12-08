@@ -46,16 +46,16 @@ uint8 *linebuf;
 uint8 sms_cram_expand_table[4];
 uint8 gg_cram_expand_table[16];
 
+/* Dirty pattern info */
+uint8 bg_name_dirty[0x200];     /* 1= This pattern is dirty */
+uint16 bg_name_list[0x200];     /* List of modified pattern indices */
+uint16 bg_list_index;           /* # of modified patterns in list */
+
 /* Internal buffer for drawing non 8-bit displays */
 static uint8 internal_buffer[0x200];
 
 /* Precalculated pixel table */
 static uint16 pixel[PALETTE_SIZE];
-
-/* Dirty pattern info */
-uint8 bg_name_dirty[0x200];     /* 1= This pattern is dirty */
-uint16 bg_name_list[0x200];     /* List of modified pattern indices */
-uint16 bg_list_index;           /* # of modified patterns in list */
 
 static uint8 bg_pattern_cache[0x20000];/* Cached and flipped patterns */
 
@@ -63,6 +63,20 @@ static uint8 bg_pattern_cache[0x20000];/* Cached and flipped patterns */
 static uint8 lut[0x10000];
 
 static uint8 object_index_count;
+
+/* Top Border area height */
+static uint8 active_border[2][3] =
+{
+  {24, 8,  0},  /* NTSC VDP */
+  {48, 32, 24}  /*  PAL VDP */
+};
+
+/* Active Scan Area height */
+static uint16 active_range[2] =
+{
+  243, /* NTSC VDP */
+  294  /*  PAL VDP */
+};
 
 /* CRAM palette in TMS compatibility mode */
 static const uint8 tms_crom[] =
@@ -349,22 +363,29 @@ static int prev_line = -1;
 /* Draw a line of the display */
 void render_line(int line)
 {
+  int view = 1;
+  int overscan = option.overscan;
+
   /* ensure we have not already rendered this line */
   if (prev_line == line) return;
   prev_line = line;
 
-  /* Viewport Line index (including vertical borders) */
-  int vline  = (line + bitmap.viewport.y - ((vdp.height - bitmap.viewport.h)/2)) % vdp.lpf;
-  
-  /* Ensure we're within the VDP active area (including overscan) */
-  if ((vline < 0) || (vline >= (sms.display ? 294 : 243))) return;
+  /* Ensure we're within the VDP active area (incl. overscan) */
+  int top_border = active_border[sms.display][vdp.extended];
+  int vline = (line + top_border) % vdp.lpf;
+  if (vline >= active_range[sms.display]) return;
+
+  /* adjust for Game Gear screen */
+  top_border = top_border + (vdp.height - bitmap.viewport.h) / 2;
 
   /* Point to current line in output buffer */
 #ifdef NGC
-  linebuf = &internal_buffer[option.overscan ? 14:0];
+  linebuf = &internal_buffer[0];
 #else
-  if (bitmap.depth == 8) linebuf = &bitmap.data[(vline * bitmap.pitch) + (option.overscan ? 14:0)];
-  else linebuf = &internal_buffer[option.overscan ? 14:0];
+  if (bitmap.depth == 8)
+    linebuf = &bitmap.data[(overscan ? vline : line) * bitmap.pitch];
+  else
+    linebuf = &internal_buffer[0];
 #endif
 
   /* Sprite limit flag is set at the beginning of the line */
@@ -374,25 +395,32 @@ void render_line(int line)
     vdp.status |= 0x40;
   }
 
-  /* Display disabled ? */
-  if (!(vdp.reg[1] & 0x40))
+  /* Vertical borders */
+  if ((vline < top_border) || (vline >= (bitmap.viewport.h + top_border)))
   {
-    /* Display background color */
-    memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
+    /* Sprites are still processed offscreen */
+    if ((vdp.mode > 7) && (vdp.reg[1] & 0x40)) 
+      render_obj(line);
+
+    /* Line is only displayed where overscan is emulated */
+    view = 0;
+    if (overscan && (vline < (bitmap.viewport.h + 2*bitmap.viewport.y)))
+    {
+      /* Background color */
+      memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
+      view = 1;
+    }
   }
+  /* Active display */
   else
   {
-    /* Vertical borders ? */
-    if ((vline < bitmap.viewport.y) || (vline >= bitmap.viewport.h + bitmap.viewport.y))
+    /* Display enabled ? */
+    if (vdp.reg[1] & 0x40)
     {
-      /* Sprites are still processed offscreen */
-      if (vdp.mode > 7) render_obj(line);
+      /* adjust line horizontal offset */
+      if (overscan)
+        linebuf += 14;
 
-      /* Display background color */
-      memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w);
-    }
-    else
-    {
       /* Update pattern cache */
       update_bg_pattern_cache();
 
@@ -403,21 +431,29 @@ void render_line(int line)
       render_obj(line);
 
       /* Blank leftmost column of display */
-      if(vdp.reg[0] & 0x20) memset(linebuf, BACKDROP_COLOR, 8);
-    }
+      if(vdp.reg[0] & 0x20)
+        memset(linebuf, BACKDROP_COLOR, 8);
 
-    /* Horizontal borders */
-    if (option.overscan)
+      /* Horizontal borders */
+      if (overscan)
+      {
+        /* Display background color */
+        memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
+        memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
+      }
+    }
+    else
     {
-      /* Display background color */
-      memset(linebuf - 14, BACKDROP_COLOR, bitmap.viewport.x);
-      memset(linebuf - 14 + bitmap.viewport.w + bitmap.viewport.x, BACKDROP_COLOR, bitmap.viewport.x);
+      /* Background color */
+      memset(linebuf, BACKDROP_COLOR, bitmap.viewport.w + 2*bitmap.viewport.x);
     }
   }
 
   /* Parse Sprites for next line */
-  if (vdp.mode > 7) parse_satb((line+1) % vdp.lpf);
-  else parse_line((line+1) % vdp.lpf);
+  if (vdp.mode > 7)
+    parse_satb((line+1) % vdp.lpf);
+  else
+    parse_line((line+1) % vdp.lpf);
 
   /* LightGun mark */
   if (sms.device[0] == DEVICE_LIGHTGUN)
@@ -439,13 +475,20 @@ void render_line(int line)
   }
 
   /* Only draw lines within the video output range ! */
-  if (vline < (bitmap.viewport.h + 2*bitmap.viewport.y))
+  if (view)
   {
+    /* adjust output line */
+    if (!overscan)
+      vline -= top_border;
+
 #ifdef NGC
-    if (option.ntsc)  sms_ntsc_blit(&sms_ntsc, ( SMS_NTSC_IN_T const * )pixel, internal_buffer, bitmap.viewport.w + 2*bitmap.viewport.x, vline);
-    else remap_8_to_16(vline);
+    if (option.ntsc)
+      sms_ntsc_blit(&sms_ntsc, ( SMS_NTSC_IN_T const * )pixel, internal_buffer, bitmap.viewport.w + 2*bitmap.viewport.x, vline);
+    else
+     remap_8_to_16(vline);
 #else
-    if(bitmap.depth != 8) remap_8_to_16(vline);
+    if(bitmap.depth != 8)
+     remap_8_to_16(vline);
 #endif
   }
 }
