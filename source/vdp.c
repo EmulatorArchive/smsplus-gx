@@ -62,6 +62,9 @@ void vdp_init(void)
     bitmap.viewport.x += 14;
   }
 
+  /* number of scanlines */
+  vdp.lpf = sms.display ? 313 : 262;
+
   /* reset viewport */
   viewport_check();
   bitmap.viewport.changed = 1;
