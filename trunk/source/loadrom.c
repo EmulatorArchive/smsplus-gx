@@ -132,7 +132,6 @@ rominfo_t game_list[gamecount] =
    "WWF Wrestlemania Steel Cage Challenge [SMS-GG]"},
   {0xcb42bd33, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_GGMS,
    "WWF Wrestlemania Steel Cage Challenge [SMS-GG] [BAD DUMP]"},
-
   {0x1d93246e, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_GGMS,
    "Olympic Gold [SMS-GG] [A]"},
   {0xa2f9c7af, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_GGMS,
@@ -231,14 +230,9 @@ rominfo_t game_list[gamecount] =
 
 };
 
-static int old_overscan;
-static int old_console;
-
 void set_config()
 {
   int i;
-
-  old_console = sms.console;
 
   /* default sms settings */
   cart.mapper = MAPPER_SEGA;
@@ -339,20 +333,6 @@ void set_config()
   {
     sms.display = DISPLAY_NTSC;
     sms.territory = TERRITORY_DOMESTIC;
-  }
-
-  /* keep old setting */
-  if (old_console != sms.console) old_overscan = option.overscan;
-
-  /* Overscan emulation (OFF by default for GG emulation) */
-  if (sms.console == CONSOLE_GG)
-  {
-    /* set overscan emulation OFF by default */
-    option.overscan = 0;
-  }
-  else 
-  {
-    option.overscan = old_overscan;
   }
 }
 

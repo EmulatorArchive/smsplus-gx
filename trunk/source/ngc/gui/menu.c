@@ -420,8 +420,7 @@ void sysmenu ()
     switch (ret)
     {
       case 0:  /*** FM Enabled ***/
-        fm_type ++;
-        if (fm_type > 2) fm_type = 0;
+        fm_type = (fm_type + 1) % 3;
         if (fm_type == 0)
         {
           option.fm_enable = 0;
@@ -436,21 +435,26 @@ void sysmenu ()
           option.fm_enable = 1;
           option.fm_which = SND_YM2413;
         }
-        system_init();
+        if ((bios.enabled == 3) || smsromsize)
+          system_init();
         break;
 
       case 1:  /*** Country ***/
-        option.country ++;
-        if (option.country > 3) option.country = 0;
-        set_config();
-        system_init();
+        option.country  = (option.country + 1) % 4;
+        if ((bios.enabled == 3) || smsromsize)
+        {
+          set_config();
+          system_init();
+        }
         break;
 
       case 2:  /*** Console Type ***/
-        option.console ++;
-        if (option.console > 6) option.console = 0;
-        set_config();
-        system_init();
+        option.console = (option.console + 1) % 7;
+        if ((bios.enabled == 3) || smsromsize) 
+        {
+          set_config();
+          system_poweron();
+        }
         break;
 
       case 3: /*** sprite flickering ***/
@@ -477,7 +481,8 @@ void sysmenu ()
           sms_cram_expand_table[2] = (18 << 3) + (1 << 2);
           sms_cram_expand_table[3] = (31 << 3) + (1 << 2);
         }
-        for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
+        for(i = 0; i < PALETTE_SIZE; i++)
+          palette_sync(i);
         break;
 
      case 5:
@@ -487,22 +492,26 @@ void sysmenu ()
 
      case 6: /*** SMS BIOS ***/
         option.use_bios ^= 1;
-        
+
         /* reset BIOS flag */
         bios.enabled &= ~1;
-        if (option.use_bios) bios.enabled |= 1;
+        if (option.use_bios)
+          bios.enabled |= 1;
 
-        if ((bios.enabled == 3) || smsromsize) system_poweron();
+        if ((bios.enabled == 3) || smsromsize)
+          system_poweron();
         break;
 
       case 7: /*** GG Extra mode ***/
         option.extra_gg ^= 1;
-        system_init();
+        if ((bios.enabled == 3) || smsromsize)
+          system_init();
         break;
 
       case 8:  /*** FreezeState autoload/autosave ***/
         option.autofreeze ++;
-        if (option.autofreeze > 2) option.autofreeze = -1;
+        if (option.autofreeze > 2)
+          option.autofreeze = -1;
         break;
 
     case -1:

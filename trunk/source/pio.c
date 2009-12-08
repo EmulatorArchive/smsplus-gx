@@ -291,7 +291,7 @@ uint8 pio_port_r(int offset)
 
     */
     case 0:
-            
+
       /* read I/O port A pins */
       temp = device_r(0) & 0x3f;
       
@@ -332,9 +332,9 @@ uint8 pio_port_r(int offset)
       if (IS_GG)
       {
         uint8 state = sio_r(0x01);
-        temp = (state & 0x3C) >> 2;   /* Insert TR,TL,D3,D2 */
-        temp |= ((state & 0x40) << 1);  /* Insert TH2 */
-        temp |= 0x40;           /* Insert TH1 (unconnected) */
+        temp = (state & 0x3C) >> 2;     /* Insert TR,TL,D3,D2       */
+        temp |= ((state & 0x40) << 1);  /* Insert TH2               */
+        temp |= 0x40;                   /* Insert TH1 (unconnected) */
       }
       else
       {
@@ -367,7 +367,7 @@ uint8 pio_port_r(int offset)
 
       /* RESET and /CONT */
       temp |= 0x30;
-      if (input.system & INPUT_RESET)  temp &= ~0x10;
+      if (input.system & INPUT_RESET) temp &= ~0x10;
       if(IS_MD) temp &= ~0x20;
 
       break;
@@ -384,9 +384,9 @@ uint8 sio_r(int offset)
   {
     case 0: /* Input port #2 */
       temp = 0xE0;
-      if(input.system & INPUT_START)      temp &= ~0x80;
+      if(input.system & INPUT_START)          temp &= ~0x80;
       if(sms.territory == TERRITORY_DOMESTIC) temp &= ~0x40;
-      if(sms.display == DISPLAY_NTSC)     temp &= ~0x20;
+      if(sms.display == DISPLAY_NTSC)         temp &= ~0x20;
       return temp;
 
     case 1: /* Parallel data register */
