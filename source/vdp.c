@@ -129,7 +129,7 @@ void viewport_check(void)
   vdp.mode = (m4 << 3 | m3 << 2 | m2 << 1 | m1 << 0);
 
   /* Check for extended modes */
-  if (IS_GG || (sms.console == CONSOLE_SMS2))
+  if (sms.console >= CONSOLE_SMS2)
   {
     switch (vdp.mode)
     {
@@ -191,7 +191,7 @@ void viewport_check(void)
   }
 
   /* check if this is switching in/out of tms */
-  if (IS_SMS)
+  if (IS_SMS || IS_GG)
   {
     /* Restore palette */
     for(i = 0; i < PALETTE_SIZE; i++)
