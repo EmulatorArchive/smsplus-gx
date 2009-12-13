@@ -45,7 +45,8 @@ static void writemem_mapper_none(int offset, int data)
 static void writemem_mapper_sega(int offset, int data)
 {
   cpu_writemap[offset >> 10][offset & 0x03FF] = data;
-  if(offset >= 0xFFFC) sms_mapper_w(offset & 3, data);
+  if(offset >= 0xFFFC)
+    sms_mapper_w(offset & 3, data);
 }
 
 static void writemem_mapper_codies(int offset, int data)
@@ -69,8 +70,10 @@ static void writemem_mapper_codies(int offset, int data)
 
 static void writemem_mapper_korean(int offset, int data)
 {
-  if (offset == 0xA000) sms_mapper_w(3, data);
-  else cpu_writemap[offset >> 10][offset & 0x03FF] = data;
+  if (offset == 0xA000)
+    sms_mapper_w(3, data);
+  else
+    cpu_writemap[offset >> 10][offset & 0x03FF] = data;
 }
 
 
@@ -91,7 +94,6 @@ void mapper_reset(void)
       break;
 
     case MAPPER_SEGA:
-    default:
       cpu_writemem16 = writemem_mapper_sega;
       break;
   }
