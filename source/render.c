@@ -28,9 +28,12 @@
 /*** NTSC Filters ***/
 extern sms_ntsc_t sms_ntsc;
 
+/*** Vertical Counter Tables ***/
+extern uint8 *vc_table[2][3];
+
 struct
 {
-  uint16 ypos;
+  uint16 yrange;
   uint16 xpos;
   uint16 attr;
 } object_info[64];
@@ -431,7 +434,7 @@ void render_line(int line)
       render_obj(line);
 
       /* Blank leftmost column of display */
-      if(vdp.reg[0] & 0x20)
+      if((vdp.reg[0] & 0x20) && (IS_SMS || IS_MD))
         memset(linebuf, BACKDROP_COLOR, 8);
 
       /* Horizontal borders */
@@ -451,9 +454,9 @@ void render_line(int line)
 
   /* Parse Sprites for next line */
   if (vdp.mode > 7)
-    parse_satb((line+1) % vdp.lpf);
+    parse_satb(line);
   else
-    parse_line((line+1) % vdp.lpf);
+    parse_line(line);
 
   /* LightGun mark */
   if (sms.device[0] == DEVICE_LIGHTGUN)
@@ -500,7 +503,7 @@ void render_bg_sms(int line)
   int yscroll_mask = (vdp.extended) ? 256 : 224;
   int v_line = (line + vdp.vscroll) % yscroll_mask;
   int v_row  = (v_line & 7) << 3;
-  int hscroll = ((vdp.reg[0] & 0x40) && (line < 0x10)) ? 0 : (0x100 - vdp.reg[8]);
+  int hscroll = ((vdp.reg[0] & 0x40) && (line < 0x10) && (sms.console != CONSOLE_GG)) ? 0 : (0x100 - vdp.reg[8]);
   int column = 0;
   uint16 attr;
   uint16 nt_addr = (vdp.ntab + ((v_line >> 3) << 6)) & (((sms.console == CONSOLE_SMS) && !(vdp.reg[2] & 1)) ? ~0x400 :0xFFFF);
@@ -598,8 +601,8 @@ void render_obj_sms(int line)
     /* Sprite X position */
     xp = object_info[i].xpos;
 
-    /* Sprite Y position */
-    yp = object_info[i].ypos;
+    /* Sprite Y range */
+    yp = object_info[i].yrange;
 
     /* Pattern name */
     n = object_info[i].attr;
@@ -627,10 +630,11 @@ void render_obj_sms(int line)
     /* Draw double size sprite */
     if(vdp.reg[1] & 0x01)
     {
-      cache_ptr = (uint8 *)&bg_pattern_cache[(n << 6) | (((line - yp) >> 1) << 3)];
+      /* Retrieve tile data from cached nametable */
+      cache_ptr = (uint8 *)&bg_pattern_cache[(n << 6) | ((yp >> 1) << 3)];
 
-      /* Draw sprite line */
-      for(x = start; x < end; x++)
+      /* Draw sprite line (at 1/2 dot rate) */
+      for(x = start; x < end; x+=2)
       {
         /* Source pixel from cache */
         sp = cache_ptr[(x >> 1)];
@@ -642,7 +646,7 @@ void render_obj_sms(int line)
           bg = linebuf_ptr[x];
 
           /* Look up result */
-          linebuf_ptr[x] = lut[(bg << 8) | (sp)];
+          linebuf_ptr[x] = linebuf_ptr[x+1] = lut[(bg << 8) | (sp)];
 
           /* Check sprite collision */
           if ((bg & 0x40) && !(vdp.status & 0x20))
@@ -656,7 +660,8 @@ void render_obj_sms(int line)
     }
     else /* Regular size sprite (8x8 / 8x16) */
     {
-      cache_ptr = (uint8 *)&bg_pattern_cache[(n << 6) | ((line - yp) << 3)];
+      /* Retrieve tile data from cached nametable */
+      cache_ptr = (uint8 *)&bg_pattern_cache[(n << 6) | (yp << 3)];
 
       /* Draw sprite line */
       for(x = start; x < end; x++)
@@ -764,17 +769,25 @@ static void parse_satb(int line)
   /* Pointer to sprite attribute table */
   uint8 *st = (uint8 *)&vdp.vram[vdp.satb];
 
-  /* Sprite count for current line (8 max.) */
+  /* Sprite counter (64 max.) */
   int i = 0;
 
-  /* Sprite dimensions */
+  /* Line counter value */
+  int vc = vc_table[sms.display][vdp.extended][line];
+
+  /* Sprite height (8x8 by default) */
   int yp;
-  int height = (vdp.reg[1] & 0x02) ? 16 : 8;
+  int height = 8;
+  
+  /* Adjust height for 8x16 sprites */
+  if(vdp.reg[1] & 0x02) 
+    height <<= 1;
 
-  /* Adjust dimensions for double size sprites */
+  /* Adjust height for zoomed sprites */
   if(vdp.reg[1] & 0x01)
-    height *= 2;
+    height <<= 1;
 
+  /* Sprite count for current line (8 max.) */
   object_index_count = 0;
 
   for(i = 0; i < 64; i++)
@@ -786,24 +799,30 @@ static void parse_satb(int line)
     if(vdp.extended == 0 && yp == 0xD0)
       return;
 
-    /* Wrap Y coordinate for sprites > 240 */
-    if(yp > 240) yp -= 256;
+    /* Compare sprite position with current line counter */
+    yp = vc - yp;
 
-    /* Actual Y position is +1 */
-    yp = (yp + 1) & 0xff;
-
-    if((line >= yp) && (line < (yp + height)))
+    /* Sprite is within vertical range? */
+    if((yp >= 0) && (yp < height))
     {
-      /* sprite limit (max. 16 or 20 sprites displayed per line) */
+      /* Sprite limit reached? */
       if (object_index_count == 8)
       {
-        if (line < vdp.height) vdp.spr_ovr = 1;
-        if (option.spritelimit)return;
+        /* Flag is set only during active area */
+        if (line < vdp.height)
+          vdp.spr_ovr = 1;
+
+        /* End of sprite parsing */
+        if (option.spritelimit)
+          return;
       }
 
-      object_info[object_index_count].ypos = yp;
+      /* Store sprite attributes for later processing */
+      object_info[object_index_count].yrange = yp;
       object_info[object_index_count].xpos = st[0x80 + (i << 1)];
       object_info[object_index_count].attr = st[0x81 + (i << 1)];
+
+      /* Increment Sprite count for current line */
       ++object_index_count;
     }
   }
