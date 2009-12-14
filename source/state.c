@@ -147,16 +147,22 @@ void system_load_state(void *mem)
   memcpy (SN76489_GetContextPtr(0), &state[bufferptr], SN76489_GetContextSize ());
   bufferptr += SN76489_GetContextSize ();
 
-  /* Restore mapping */
-  slot.rom    = cart.rom;
-  slot.pages  = cart.pages;
-  slot.mapper = cart.mapper;
-  slot.fcr = &cart.fcr[0];
-  mapper_reset();
-  sms_mapper_w(0, cart.fcr[0]);
-  sms_mapper_w(1, cart.fcr[1]);
-  sms_mapper_w(2, cart.fcr[2]);
-  sms_mapper_w(3, cart.fcr[3]);
+  if ((sms.console != CONSOLE_COLECO) && (sms.console != CONSOLE_SG1000))
+  {
+    /* Cartridge by default */
+    slot.rom    = cart.rom;
+    slot.pages  = cart.pages;
+    slot.mapper = cart.mapper;
+    slot.fcr = &cart.fcr[0];
+    cpu_readmap[0]  = &cart.rom[0];
+
+    /* Restore mapping */
+    mapper_reset();
+    sms_mapper_w(0, cart.fcr[0]);
+    sms_mapper_w(1, cart.fcr[1]);
+    sms_mapper_w(2, cart.fcr[2]);
+    sms_mapper_w(3, cart.fcr[3]);
+  }
 
   /* Force full pattern cache update */
   bg_list_index = 0x200;
@@ -167,5 +173,6 @@ void system_load_state(void *mem)
   }
 
   /* Restore palette */
-  for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
+  for(i = 0; i < PALETTE_SIZE; i++)
+    palette_sync(i);
 }
