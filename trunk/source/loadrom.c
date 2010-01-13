@@ -22,7 +22,7 @@
 
 #include "shared.h"
 
-#define gamecount 84
+#define GAME_DATABASE_CNT 85
 
 typedef struct
 {
@@ -36,9 +36,9 @@ typedef struct
   char *name;
 } rominfo_t;
 
-rominfo_t game_list[gamecount] =
+rominfo_t game_list[GAME_DATABASE_CNT] =
 {
-  /* games that require CODEMASTER mapper */
+  /* games requiring CODEMASTER mapper */
   {0x29822980, 0, DEVICE_PAD2B, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Cosmic Spacehead"},
   {0x6CAA625B, 0, DEVICE_PAD2B, MAPPER_CODIES, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_GG,
@@ -70,14 +70,16 @@ rominfo_t game_list[gamecount] =
   {0xC1756BEE, 0, DEVICE_PAD2B, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Pete Sampras Tennis"},
 
-  /* games that require KOREAN mapper */
+  /* games requiring KOREAN mapper */
   {0x97d03541, 0, DEVICE_PAD2B, MAPPER_KOREAN, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Sangokushi 3 (KR)"},
   {0x89b79e77, 0, DEVICE_PAD2B, MAPPER_KOREAN, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Dodgeball King (KR)"},
+  {0x67c2f0ff, 0, DEVICE_PAD2B, MAPPER_KOREAN, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
+   "Super Boy II (KR)"},
 
 
-  /* games that require PAL system (15)*/
+  /* games that require PAL timings (from MEKA.nam by Omar Cornut) */
   {0x72420f38, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Addams Familly"},
   {0x2d48c1d3, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
@@ -113,7 +115,7 @@ rominfo_t game_list[gamecount] =
   {0x32759751, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS,
    "Y's (J)"},
 
-  /* games requiring Game Gear MS mode */
+  /* games requiring Game Gear SMS compatibility mode */
   {0x59840fd6, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_GGMS,
    "Castle of Illusion - Starring Mickey Mouse"},
   {0x9942b69b, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_GGMS,
@@ -150,7 +152,7 @@ rominfo_t game_list[gamecount] =
    "Super Kick Off [SMS-GG]"},
 
 
-  /* games that require 3D Glasses (10) */
+  /* games requiring 3D Glasses */
   {0xFBF96C81, 1, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Blade Eagle 3-D (BR)"},
   {0x8ECD201C, 1, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
@@ -172,13 +174,13 @@ rominfo_t game_list[gamecount] =
   {0xd6f43dda, 1, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Out Run 3-D"},
 
-  /* games that require Light Phaser & 3D Glasses (2) */
+  /* games requiring Light Phaser & 3D Glasses */
   {0xFBE5CFBB, 1, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Missile Defense 3D"},
   {0xe79bb689, 1, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Missile Defense 3D [BIOS]"},
   
-  /* games that require Light Phaser (13) */
+  /* games requiring Light Phaser */
   {0x861b6e79, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Assault City [Light Phaser]"},
   {0x5fc74d2a, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
@@ -210,7 +212,7 @@ rominfo_t game_list[gamecount] =
   {0x0ca95637, 0, DEVICE_LIGHTGUN, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Laser Ghost"},
 
-  /* games that require Paddle (4) */
+  /* games requiring Paddle */
   {0xf9dbb533, 0, DEVICE_PADDLE, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS,
    "Alex Kidd BMX Trial"},
   {0xa6fa42d0, 0, DEVICE_PADDLE, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS,
@@ -220,7 +222,7 @@ rominfo_t game_list[gamecount] =
   {0x315917d4, 0, DEVICE_PADDLE, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS,
    "Woody Pop"},
 
-    /* games that require Sport Pad (3) */
+    /* games requiring Sport Pad (NOT EMULATED YET) */
   {0x946b8c4a, 0, DEVICE_SPORTSPAD, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Great Ice Hockey"},
   {0xe42e4998, 0, DEVICE_SPORTSPAD, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
@@ -278,7 +280,7 @@ void set_config()
   sms.gun_offset = 20; /* default offset */
 
   /* retrieve game settings from database */
-  for (i = 0; i < gamecount; i++)
+  for (i = 0; i < GAME_DATABASE_CNT; i++)
   {
     if (cart.crc == game_list[i].crc)
     {
@@ -296,12 +298,15 @@ void set_config()
         /* these games seem to use different gun position calculation method */
         sms.gun_offset = 16;
       }
+      i = GAME_DATABASE_CNT;
     }
   }
 
   /* reinit bios */
-  if (IS_SMS) bios.enabled |= (option.use_bios & 1);
-  else bios.enabled &= ~1;
+  if (IS_SMS)
+    bios.enabled |= (option.use_bios & 1);
+  else
+    bios.enabled &= ~1;
 
   /* force settings if AUTO is not set*/
   if (option.console == 1)
