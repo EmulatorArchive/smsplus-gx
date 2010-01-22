@@ -367,7 +367,8 @@ uint8 vdp_read(int offset)
         render_line(line);
       }
 
-      temp = vdp.status;
+      /* low 5 bits return non-zero data (fixes PGA Tour Golf course map introduction) */
+      temp = vdp.status | 0x1f;
 
       /* clear flags */
       vdp.status = 0;

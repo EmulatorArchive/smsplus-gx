@@ -22,7 +22,7 @@
 
 #include "shared.h"
 
-#define GAME_DATABASE_CNT 85
+#define GAME_DATABASE_CNT 86
 
 typedef struct
 {
@@ -78,6 +78,9 @@ rominfo_t game_list[GAME_DATABASE_CNT] =
   {0x67c2f0ff, 0, DEVICE_PAD2B, MAPPER_KOREAN, DISPLAY_NTSC, TERRITORY_EXPORT, CONSOLE_SMS2,
    "Super Boy II (KR)"},
 
+  /* games requiring japanese SMS (different I/O lines mapping ?) */
+  {0xbd1cc7df, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS2,
+   "Super Tetris (KR)"},
 
   /* games that require PAL timings (from MEKA.nam by Omar Cornut) */
   {0x72420f38, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,
