@@ -139,6 +139,8 @@ void sms_port_w(uint16 port, uint8 data)
   switch(port & 0xC1)
   {
     case 0x00:
+      if ((sms.territory == TERRITORY_DOMESTIC) && (port != 0x3E))
+        break; /* japanese SMS has somehow different I/O mapping (fixes Super Tetris) */
       memctrl_w(data);
       return;
 
