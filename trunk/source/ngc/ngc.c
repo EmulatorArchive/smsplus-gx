@@ -176,6 +176,7 @@ int main (int argc, char *argv[])
 
   /* Initialize Frame timings */
   frameticker = 0;
+  usBetweenFrames = sms.display ? 20000 : 16666;
   prev = gettime();
 
   /* Emulation Loop */
@@ -188,7 +189,6 @@ int main (int argc, char *argv[])
     if (gc_pal != sms.display)
     {
       /* use timers */
-      usBetweenFrames = sms.display ? 20000 : 16666;
       now = gettime();
       if (diff_usec(prev, now) > usBetweenFrames)
       {
@@ -239,8 +239,11 @@ int main (int argc, char *argv[])
       /* go to menu */
       MainMenu ();
       ConfigRequested = 0;
+      ogc_video__reset();
 
       /* reset frame timings */
+      frameticker = 0;
+      usBetweenFrames = sms.display ? 20000 : 16666;
       prev = gettime();
     }
   }

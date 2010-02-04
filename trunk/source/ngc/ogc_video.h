@@ -28,10 +28,9 @@ extern void ogc_video__init(void);
 extern void ogc_video__update(void);
 extern void ogc_video__reset(void);
 
-extern BOOL gc_pal;
-extern unsigned int *xfb[2];
-extern int whichfb;
-extern GXRModeObj *tvmodes[4];
+extern u32 gc_pal;
+extern u32 *xfb[2];
+extern u32 whichfb;
 extern GXRModeObj *vmode;
 
 #endif

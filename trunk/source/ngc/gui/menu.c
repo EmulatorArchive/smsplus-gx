@@ -275,7 +275,7 @@ void dispmenu ()
     {
       case 0: /*** config.aspect ratio ***/
         option.aspect ^= 1;
-        count = option.aspect ? 9 : 11;
+        count = option.aspect ? 8 : 10;
         break;
 
       case 1: /*** rendering ***/
@@ -293,7 +293,6 @@ void dispmenu ()
             option.render = 0;
           }
         }
-        bitmap.viewport.changed = 1;
         break;
 
       case 2: /*** tv mode ***/
@@ -303,13 +302,11 @@ void dispmenu ()
     
       case 3: /*** bilinear filtering ***/
         option.bilinear ^= 1;
-        bitmap.viewport.changed = 1;
         break;
 
       case 4: /*** NTSC filter ***/
         option.ntsc ++;
         if (option.ntsc > 3) option.ntsc = 0;
-        bitmap.viewport.changed = 1;
         break;
         
       case 5: /*** overscan emulation ***/
@@ -892,7 +889,6 @@ void MainMenu ()
   VIDEO_Flush();
   VIDEO_WaitVSync();
   VIDEO_WaitVSync();
-  ogc_video__reset();
 
 #ifndef HW_RVL
   /*** Stop the DVD from causing clicks while playing ***/
