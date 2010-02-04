@@ -3,7 +3,7 @@
  *
  *  SMS Plus GX video support
  *
- *  code by Softdev (2006), Eke-Eke (2007,2008)
+ *  code by Softdev (2006), Eke-Eke (2007-2010)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -21,23 +21,21 @@
  *
  ***************************************************************************/
 
-
 #include "shared.h"
 #include "font.h"
 #include "sms_ntsc.h"
 
 /*** NTSC Filters ***/
-sms_ntsc_setup_t sms_setup;
 sms_ntsc_t sms_ntsc;
+sms_ntsc_setup_t sms_setup;
 
 /*** PAL 50hz flag ***/
-BOOL gc_pal = 0;
+u32 gc_pal = 0;
 
 /*** VI ***/
-unsigned int *xfb[2]; /*** Double buffered            ***/
-int whichfb = 0;      /*** External framebuffer index ***/
-GXRModeObj *vmode;    /*** Menu video mode            ***/
-u8 *texturemem;       /*** Texture Data               ***/
+u32 *xfb[2];        /*** Double buffered            ***/
+u32 whichfb = 0;    /*** External framebuffer index ***/
+GXRModeObj *vmode;  /*** Menu video mode            ***/
 
 /*** GX ***/
 #define TEX_WIDTH         720
@@ -47,15 +45,16 @@ u8 *texturemem;       /*** Texture Data               ***/
 #define DEFAULT_FIFO_SIZE 256 * 1024
 #define HASPECT           320
 #define VASPECT           240
+#define BLACK			        {0,0,0,0}
 
 static u8 gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN (32);
-static GXTexObj texobj;
-static Mtx view;
 static int vwidth, vheight, offset, shift;
+static u8 *texturemem;
+static GXRModeObj *rmode;
 
 /*** custom Video modes (used to emulate original console video modes) ***/
 /* 288 lines progressive (PAL 50Hz) */
-GXRModeObj TV50hz_288p = 
+static GXRModeObj TV50hz_288p = 
 {
   VI_TVMODE_PAL_DS,       // viDisplayMode
   640,             // fbWidth
@@ -90,7 +89,7 @@ GXRModeObj TV50hz_288p =
 };
 
 /* 576 lines interlaced (PAL 50Hz, scaled) */
-GXRModeObj TV50hz_576i = 
+static GXRModeObj TV50hz_576i = 
 {
   VI_TVMODE_PAL_INT,      // viDisplayMode
   640,             // fbWidth
@@ -125,7 +124,7 @@ GXRModeObj TV50hz_576i =
 };
 
 /* 240 lines progressive (NTSC or PAL 60Hz) */
-GXRModeObj TV60hz_240p = 
+static GXRModeObj TV60hz_240p = 
 {
   VI_TVMODE_EURGB60_DS,      // viDisplayMode
   640,             // fbWidth
@@ -160,7 +159,7 @@ GXRModeObj TV60hz_240p =
 };
 
 /* 480 lines interlaced (NTSC or PAL 60Hz) */
-GXRModeObj TV60hz_480i = 
+static GXRModeObj TV60hz_480i = 
 {
   VI_TVMODE_EURGB60_INT,     // viDisplayMode
   640,             // fbWidth
@@ -195,7 +194,7 @@ GXRModeObj TV60hz_480i =
 };
 
 /* TV Modes table */
-GXRModeObj *tvmodes[4] = {
+static GXRModeObj *tvmodes[4] = {
   &TV60hz_240p, &TV60hz_480i, /* 60hz modes */
   &TV50hz_288p, &TV50hz_576i  /* 50Hz modes */
 };
@@ -228,32 +227,6 @@ static camera cam = {
   {0.0F, -1.0F, 0.0F},
   {0.0F, 0.0F, 0.0F}
 };
-
-/* rendering initialization */
-/* should be called each time you change quad aspect ratio */
-static void draw_init(void)
-{
-  /* Clear all Vertex params */
-  GX_ClearVtxDesc ();
-
-  /* Set Position Params (quad aspect ratio) */
-  GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-  GX_SetVtxDesc (GX_VA_POS, GX_INDEX8);
-  GX_SetArray (GX_VA_POS, square, 3 * sizeof (s16));
-
-  /* Set Tex Coord Params */
-  GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-  GX_SetVtxDesc (GX_VA_TEX0, GX_DIRECT);
-  GX_SetTevOp (GX_TEVSTAGE0, GX_REPLACE);
-  GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
-  GX_SetNumTexGens (1);
-  GX_SetNumChans(0);
-
-  /* Set Modelview */
-  memset (&view, 0, sizeof (Mtx));
-  guLookAt(view, &cam.pos, &cam.up, &cam.view);
-  GX_LoadPosMtxImm (view, GX_PNMTX0);
-}
 
 /* vertex rendering */
 static inline void draw_vert(u8 pos, f32 s, f32 t)
@@ -291,49 +264,75 @@ static void framestart(u32 retraceCnt)
 /* Initialize GX */
 static void gxStart(void)
 {
-  Mtx p;
-  GXColor gxbackground = { 0, 0, 0, 0xff };
-
   /*** Clear out FIFO area ***/
-  memset (&gp_fifo, 0, DEFAULT_FIFO_SIZE);
+  memset(&gp_fifo, 0, DEFAULT_FIFO_SIZE);
 
   /*** GX default ***/
-  GX_Init (&gp_fifo, DEFAULT_FIFO_SIZE);
-  GX_SetCopyClear (gxbackground, 0x00ffffff);
+  GX_Init(&gp_fifo, DEFAULT_FIFO_SIZE);
+  GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+  GX_SetCullMode(GX_CULL_NONE);
+  GX_SetCullMode(GX_CULL_NONE);
+	GX_SetClipMode(GX_CLIP_DISABLE);
+  GX_SetDispCopyGamma(GX_GM_1_0);
+  GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+  GX_SetColorUpdate(GX_TRUE);
+  GX_SetAlphaUpdate(GX_FALSE);
 
-  GX_SetViewport (0.0F, 0.0F, vmode->fbWidth, vmode->efbHeight, 0.0F, 1.0F);
-  GX_SetScissor (0, 0, vmode->fbWidth, vmode->efbHeight);
-  f32 yScale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
-  u16 xfbHeight = GX_SetDispCopyYScale (yScale);
-  GX_SetDispCopySrc (0, 0, vmode->fbWidth, vmode->efbHeight);
-  GX_SetDispCopyDst (vmode->fbWidth, xfbHeight);
-  GX_SetCopyFilter (vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
-  GX_SetFieldMode (vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
-  GX_SetPixelFmt (GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-  GX_SetCullMode (GX_CULL_NONE);
-  GX_SetDispCopyGamma (GX_GM_1_0);
-  GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_TRUE);
-  GX_SetColorUpdate (GX_TRUE);
-  guOrtho(p, vmode->efbHeight/2, -(vmode->efbHeight/2), -(vmode->fbWidth/2), vmode->fbWidth/2, 100, 1000);
-  GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
+  /* Modelview */
+  Mtx view;
+  memset (&view, 0, sizeof (Mtx));
+  guLookAt(view, &cam.pos, &cam.up, &cam.view);
+  GX_LoadPosMtxImm(view, GX_PNMTX0);
+  GX_Flush();
+ }
+ 
+/* Reset GX rendering mode */
+static void gxResetMode(GXRModeObj *tvmode)
+{
+  Mtx44 p;
+  f32 yScale = GX_GetYScaleFactor(tvmode->efbHeight, tvmode->xfbHeight);
+  u16 xfbHeight = GX_SetDispCopyYScale(yScale);
+  u16 xfbWidth  = tvmode->fbWidth;  
+  if (xfbWidth & 15)  // xfb width is 16 pixels aligned
+    xfbWidth = (xfbWidth & ~15) + 16;
 
-  /*** Reset XFB ***/
-  GX_CopyDisp (xfb[whichfb ^ 1], GX_TRUE);
-
-  /*** Initialize texture data ***/
-  texturemem = memalign(32, TEX_WIDTH * TEX_HEIGHT * 2);
-  memset (texturemem, 0, TEX_WIDTH * TEX_HEIGHT * 2);
-
-  /*** Initialize renderer */
-  draw_init();
+  GX_SetCopyClear((GXColor)BLACK,0x00ffffff);
+  GX_SetViewport(0.0F, 0.0F, tvmode->fbWidth, tvmode->efbHeight, 0.0F, 1.0F);
+  GX_SetScissor(0, 0, tvmode->fbWidth, tvmode->efbHeight);
+  GX_SetDispCopySrc(0, 0, tvmode->fbWidth, tvmode->efbHeight);
+  GX_SetDispCopyDst(xfbWidth, xfbHeight); 
+  GX_SetCopyFilter(tvmode->aa, tvmode->sample_pattern, (tvmode->xfbMode == VI_XFBMODE_SF) ? GX_FALSE : GX_TRUE, tvmode->vfilter);
+  GX_SetFieldMode(tvmode->field_rendering, ((tvmode->viHeight == 2 * tvmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
+  guOrtho(p, tvmode->efbHeight/2, -(tvmode->efbHeight/2), -(tvmode->fbWidth/2), tvmode->fbWidth/2, 100, 1000);
+  GX_LoadProjectionMtx(p, GX_ORTHOGRAPHIC);
+  GX_Flush();
 }
 
-/* set GX scaler */
-static void gxScale(void)
+/* Reset GX rendering */
+static void gxResetRendering(void)
 {
-  int xscale, yscale, xshift, yshift;
+  GX_ClearVtxDesc();
+  GX_SetBlendMode(GX_BM_NONE,GX_BL_SRCALPHA,GX_BL_INVSRCALPHA,GX_LO_CLEAR);
+  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+  GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
+  GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+  GX_SetArray(GX_VA_POS, square, 3 * sizeof (s16));
+  /* 
+    Color.out = Color.texture
+    Alpha.out = Alpha.texture 
+  */
+  GX_SetTevOp (GX_TEVSTAGE0, GX_REPLACE);
+  GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+  GX_SetNumTexGens(1);
+  GX_SetNumChans(0);
+  GX_Flush();
+}
 
-  /* Aspect Ratio (depending on current configuration) */
+
+/* Manage Aspect Ratio */
+static void gxSetAspectRatio(int *xscale, int *yscale)
+{
   if (option.aspect)
   {
     /* original aspect */
@@ -342,18 +341,15 @@ static void gxScale(void)
       if (sms.console == CONSOLE_GGMS)
       {
         /* SMS display scaled into GG screen */
-        xscale = 182;
-        yscale = 72;
-        if (gc_pal && !option.render) yscale = yscale * 288 / 243;
-        xshift = 0;
-        yshift = 0;
+        *xscale = 204;
+        *yscale = 72;
+        if (gc_pal && !option.render)
+          *yscale = *yscale * 288 / 243;
       }
       else
       {
-        xscale = 320;
-        yscale = sms.display ? ((gc_pal && !option.render) ? 144 : 121) : ((gc_pal && !option.render) ? 143 : 120);
-        xshift = 0;
-        yshift = sms.display ? (gc_pal ? 1 : 0) : 2;
+        *xscale = 365;
+        *yscale = sms.display ? ((gc_pal && !option.render) ? 144 : 121) : ((gc_pal && !option.render) ? 143 : 120);
       }
     }
     else
@@ -362,41 +358,91 @@ static void gxScale(void)
       if ((sms.console == CONSOLE_GGMS) || ((sms.console == CONSOLE_GG) && !option.extra_gg))
       {
         /* SMS display scaled into GG screen */
-        xscale = 182;
-        yscale = 72;
-        if (gc_pal && !option.render) yscale = yscale * 288 / 243;
-        xshift = 0;
-        yshift = 0;
+        *xscale = 204;
+        *yscale = 72;
+        if (gc_pal && !option.render) *yscale = *yscale * 288 / 243;
       }
       else
       {
-        xscale = 290;
-        yscale = bitmap.viewport.h / 2;
-        if (sms.display && (!gc_pal || option.render)) yscale = yscale * 243 / 288;
-        else if (!sms.display && gc_pal && !option.render) yscale = yscale * 288 / 243;
-        xshift = 0;
-        yshift = sms.display ? (gc_pal ? 1 : 0) : 2;
+        *xscale = 327;
+        *yscale = bitmap.viewport.h / 2;
+        if (sms.display && (!gc_pal || option.render))
+          *yscale = *yscale * 243 / 288;
+        else if (!sms.display && gc_pal && !option.render)
+          *yscale = *yscale * 288 / 243;
       }
     }
   }
   else
   {
     /* fit screen */
-    xscale = (option.overscan) ? 320 : 290;
-    yscale = (gc_pal && !option.render) ? 134 : 112;
-    xshift = 0;
-    yshift = gc_pal ? 1 : 2;
+    *xscale = (option.overscan) ? 365 : 327;
+    *yscale = (gc_pal && !option.render) ? 134 : 112;
+    
+    /* user configuration */
+    *xscale += option.xscale;
+    *yscale += option.yscale;
   }
+}
 
-  /* user configuration */
-  if (!option.aspect)
+/* Reset GX/VI hardware scaler */
+static void gxResetScaler(u32 width, u32 height)
+{
+  int xscale  = 0;
+  int yscale  = 0;
+  int offset  = 0;
+
+  /* retrieve screen aspect ratio */
+  gxSetAspectRatio(&xscale, &yscale);
+
+  /* default EFB width */
+  rmode->fbWidth = 640;
+
+  /* no filtering, disable GX horizontal scaling */
+  if (!option.bilinear && !option.ntsc)
+    rmode->fbWidth = width * 2;
+
+  /* configure VI width */
+  if ((xscale * 2) > rmode->fbWidth)
   {
-    xscale += option.xscale;
-    yscale += option.yscale;
+    /* max width = 720 pixels */
+    if (xscale > 360)
+    {
+      /* save offset for later */
+      offset = ((xscale - 360) * rmode->fbWidth) / rmode->viWidth;
+
+      /* maximal width */
+      xscale = 360;
+    }
+
+    /* enable VI upscaling */
+    rmode->viWidth = xscale * 2;
+    rmode->viXOrigin = (720 - (xscale * 2)) / 2;
+
+    /* default GX horizontal scaling */
+    xscale = (rmode->fbWidth / 2);
+
+    /* handle additional upscaling */
+    if (offset)
+    {
+      /* no filtering, reduce EFB width to increase VI upscaling */
+      if (!option.bilinear && !option.ntsc)
+        rmode->fbWidth -= (offset * 2);
+      
+      /* increase GX horizontal scaling */
+      else
+        xscale += offset;
+    }
+  }
+  else
+  {
+    /* disable VI upscaling */
+    rmode->viWidth = rmode->fbWidth;
+    rmode->viXOrigin = (720 - rmode->fbWidth) / 2;
   }
 
-  xshift += option.xshift;
-  yshift += option.yshift;
+  int xshift = option.xshift;
+  int yshift = option.yshift;
 
   /* double resolution */
   if (option.render)
@@ -418,54 +464,23 @@ static void gxScale(void)
 /* Reinitialize Video */
 void ogc_video__reset()
 {
-  Mtx p;
-  GXRModeObj *rmode;
-
   /* 50Hz/60Hz mode */
-  if ((option.tv_mode == 1) || ((option.tv_mode == 2) && sms.display)) gc_pal = 1;
-  else gc_pal = 0;
+  if ((option.tv_mode == 1) || ((option.tv_mode == 2) && sms.display))
+    gc_pal = 1;
+  else
+    gc_pal = 0;
 
-  /* reset scaler */
-  gxScale();
-
-  /* reinitialize current TV mode */
+  /* set interlaced or progressive video mode */
   if (option.render == 2)
   {
-    /* 480p */
     tvmodes[1]->viTVMode = VI_TVMODE_NTSC_PROG;
     tvmodes[1]->xfbMode = VI_XFBMODE_SF;
   }
   else
   {
-    /* 480i */
     tvmodes[1]->viTVMode = tvmodes[0]->viTVMode & ~3;
     tvmodes[1]->xfbMode = VI_XFBMODE_DF;
   }
-
-  /* Set current TV mode */  
-  rmode = option.render ? tvmodes[gc_pal*2 + 1] : tvmodes[gc_pal*2];
-
-    /* Configure VI */
-  VIDEO_Configure (rmode);
-  VIDEO_Flush();
-  VIDEO_WaitVSync();
-  VIDEO_WaitVSync();
-
-  /* reset frame counter */
-  frameticker = 0;
-
-  /* Configure GX */
-  GX_SetViewport (0.0F, 0.0F, rmode->fbWidth, rmode->efbHeight, 0.0F, 1.0F);
-  GX_SetScissor (0, 0, rmode->fbWidth, rmode->efbHeight);
-  f32 yScale = GX_GetYScaleFactor(rmode->efbHeight, rmode->xfbHeight);
-  u16 xfbHeight = GX_SetDispCopyYScale (yScale);
-  GX_SetDispCopySrc (0, 0, rmode->fbWidth, rmode->efbHeight);
-  GX_SetDispCopyDst (rmode->fbWidth, xfbHeight);
-  GX_SetCopyFilter (rmode->aa, rmode->sample_pattern, option.render ? GX_TRUE : GX_FALSE, rmode->vfilter);
-  GX_SetFieldMode (rmode->field_rendering, ((rmode->viHeight == 2 * rmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
-  GX_SetPixelFmt (rmode->aa ? GX_PF_RGB565_Z16 : GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-  guOrtho(p, rmode->efbHeight/2, -(rmode->efbHeight/2), -(rmode->fbWidth/2), rmode->fbWidth/2, 100, 1000);
-  GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
 
   /* Software NTSC filter */
   if (option.ntsc == 1)
@@ -483,6 +498,9 @@ void ogc_video__reset()
     sms_setup = sms_ntsc_rgb;
     sms_ntsc_init( &sms_ntsc, &sms_setup );
   }
+
+  /* force changes on next video update */
+  bitmap.viewport.changed = 1;
 }
 
 /* GX render update */
@@ -490,7 +508,10 @@ void ogc_video__update()
 {
   int h, w;
 
-  if (bitmap.viewport.changed)
+  int update = bitmap.viewport.changed;
+
+  /* check if display has changed */
+  if (update)
   {
     bitmap.viewport.changed = 0;
     
@@ -517,29 +538,42 @@ void ogc_video__update()
     }
 
     /* ntsc filter */
-    if (option.ntsc) vwidth = SMS_NTSC_OUT_WIDTH(vwidth);
+    if (option.ntsc)
+      vwidth = SMS_NTSC_OUT_WIDTH(vwidth);
 
-    /* texture size must be multiple of 4 texels */
-    vwidth = (vwidth / 4) * 4;
-    vheight = (vheight / 4) * 4;
+    /* texels size must be multiple of 4 */
+    vwidth  = (vwidth  >> 2) << 2;
+    vheight = (vheight >> 2) << 2;
 
-    /* final offset */
-    shift   = (bitmap.width - vwidth) / 4;
+    /* framebuffer offset */
+    shift = (bitmap.width - vwidth) >> 2;
 
-    /* reset scaler (height has changed) */
-    gxScale();
-   
-    /* reinitialize texture */
-    GX_InitTexObj (&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    /* initialize texture object */
+    GXTexObj texobj;
+    GX_InitTexObj(&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
-    /* enable/disable bilinear filtering */
+    /* configure texture filtering */
     if (!option.bilinear)
-    {
-      GX_InitTexObjLOD(&texobj,GX_NEAR,GX_NEAR_MIP_NEAR,2.5,9.0,0.0,GX_FALSE,GX_FALSE,GX_ANISO_1);
-    }
+      GX_InitTexObjLOD(&texobj,GX_NEAR,GX_NEAR_MIP_NEAR,0.0,10.0,0.0,GX_FALSE,GX_FALSE,GX_ANISO_1);
 
-    /* load texture */
-    GX_LoadTexObj (&texobj, GX_TEXMAP0);
+    /* load texture object */
+    GX_LoadTexObj(&texobj, GX_TEXMAP0);
+
+    /* set current TV mode */  
+    if (option.render)
+      rmode = tvmodes[gc_pal*2 + 1];
+    else
+      rmode = tvmodes[gc_pal*2];
+
+    /* reset aspect ratio */
+    gxResetScaler(vwidth,vheight);
+
+    /* reset GX rendering mode */
+    gxResetMode(rmode);
+
+    /* change VI mode */
+    VIDEO_Configure(rmode);
+    VIDEO_Flush();
   }
 
   /* fill texture data */
@@ -572,16 +606,24 @@ void ogc_video__update()
 
   /* render textured quad */
   draw_square ();
-  GX_DrawDone ();
 
-  /* switch external framebuffers then copy EFB to XFB */
+  /* swap XFB */
   whichfb ^= 1;
-  GX_CopyDisp (xfb[whichfb], GX_TRUE);
-  GX_Flush ();
 
-  /* set next XFB */
-  VIDEO_SetNextFramebuffer (xfb[whichfb]);
-  VIDEO_Flush ();
+  /* copy EFB to XFB */
+  GX_DrawDone();
+  GX_CopyDisp(xfb[whichfb], GX_TRUE);
+  GX_Flush();
+  VIDEO_SetNextFramebuffer(xfb[whichfb]);
+  VIDEO_Flush();
+
+  /* Video Sync */
+  if (update)
+  {
+    VIDEO_WaitVSync();
+    if (frameticker > 1)
+      frameticker = 1;
+  }
 }
 
 /* Initialize VIDEO subsystem */
@@ -592,7 +634,6 @@ void ogc_video__init(void)
    * Call VIDEO_Init
    */
   VIDEO_Init ();
-
 
   /* Get the current video mode then :
       - set menu video mode (480p, 480i or 576i)
@@ -679,4 +720,13 @@ void ogc_video__init(void)
 
   /* Initialize GX */
   gxStart();
+  gxResetRendering();
+  gxResetMode(vmode);
+
+  /* Clear XFB */
+  GX_CopyDisp (xfb[whichfb ^ 1], GX_TRUE);
+
+  /* Initialize texture data */
+  texturemem = memalign(32, TEX_WIDTH * TEX_HEIGHT * 2);
+  memset (texturemem, 0, TEX_WIDTH * TEX_HEIGHT * 2);
 }
