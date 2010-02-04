@@ -139,8 +139,6 @@ void sms_port_w(uint16 port, uint8 data)
   switch(port & 0xC1)
   {
     case 0x00:
-      if ((sms.territory == TERRITORY_DOMESTIC) && (port != 0x3E))
-        break; /* japanese SMS has somehow different I/O mapping (fixes Super Tetris) */
       memctrl_w(data);
       return;
 
@@ -199,7 +197,7 @@ void gg_port_w(uint16 port, uint8 data)
 {
   port &= 0xFF;
 
-  if(port <= 0x06) {
+  if(port <= 0x20) {
     sio_w(port, data);
     return;
   }
@@ -231,8 +229,8 @@ uint8 gg_port_r(uint16 port)
 {
   port &= 0xFF;
 
-  if(port <= 0x06)
-  return sio_r(port);
+  if(port <= 0x20)
+    return sio_r(port);
 
   switch(port & 0xC0)
   {
@@ -269,6 +267,11 @@ void ggms_port_w(uint16 port, uint8 data)
 {
   port &= 0xFF;
 
+  if(port <= 0x20) {
+    sio_w(port, data);
+    return;
+  }
+
   switch(port & 0xC1)
   {
     case 0x00:
@@ -294,6 +297,9 @@ void ggms_port_w(uint16 port, uint8 data)
 uint8 ggms_port_r(uint16 port)
 {
   port &= 0xFF;
+
+  if(port <= 0x20)
+    return sio_r(port);
 
   switch(port & 0xC0)
   {
