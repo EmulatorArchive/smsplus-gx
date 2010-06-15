@@ -26,6 +26,9 @@
 #include "font.h"
 #include "dkpro.h"
 
+#ifdef HW_RVL
+#include "preferences.h"
+#endif
 /*
  * Unpack the devkit pro logo
  */
@@ -52,6 +55,11 @@ int dkunpack ()
  */
 void legal ()
 {
+#ifdef HW_RVL
+  // *** Load XML Settings *** //
+  load_settings();
+#endif
+
   int ypos = 64;
 
   whichfb ^= 1;
