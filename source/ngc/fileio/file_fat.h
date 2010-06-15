@@ -29,6 +29,7 @@
 
 #ifdef HW_RVL
 #define TYPE_USB      2
+#define TYPE_SMB      4
 #endif
 
 extern int FAT_UpdateDir(int go_up);

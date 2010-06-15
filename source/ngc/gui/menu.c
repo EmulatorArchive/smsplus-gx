@@ -27,10 +27,16 @@
 #include "file_dvd.h"
 #include "file_fat.h"
 #include "filesel.h"
+#include <errno.h>
 
 #ifdef HW_RVL
+#include "preferences.h"
+#include <network.h>
+#include <smb.h>
 #include <wiiuse/wpad.h>
 #include <di/di.h>
+
+struct SSMSSettings SMSSettings;
 #endif
 
 /***************************************************************************
@@ -41,6 +47,8 @@
  ***************************************************************************/
 char menutitle[60] = { "" };
 int menu = 0;
+int networkInit;
+
 
 void drawmenu (char items[][25], int maxitems, int selected)
 {
@@ -268,6 +276,7 @@ void dispmenu ()
     sprintf (items[7], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
     sprintf (items[8], "Scale  X:  %02d", option.xscale);
     sprintf (items[9], "Scale  Y:  %02d", option.yscale);
+	sprintf (items[9], "Scale  Y:  %02d", option.yscale);
 
     ret = domenu (&items[0], count, 1);
 
@@ -594,6 +603,90 @@ void ctrlmenu ()
 }
 
 /****************************************************************************
+ * SMB Settings Menu
+ *
+ ****************************************************************************/
+#ifdef HW_RVL
+
+void initNetwork()
+{
+	ShowAction("initializing network...");
+	while (net_init() == -EAGAIN);
+	char myIP[16];
+
+	if (if_config(myIP, NULL, NULL, true) < 0) 
+	{
+		WaitPrompt("failed to init network interface\n");
+		exit(EXIT_FAILURE);
+	}
+	else
+	{
+		networkInit = 1;
+		if ((strlen(SMSSettings.share)) > 0 && (strlen(SMSSettings.ip) > 0))
+		{
+			if (!smbInit(SMSSettings.user, SMSSettings.pwd, SMSSettings.share, SMSSettings.ip)) 
+			{
+				printf("failed to connect to SMB share\n");
+				exit(EXIT_FAILURE);
+			}
+		}
+		else
+			WaitPrompt("Wrong Parameters - Check your Settings.xml");
+	}
+	
+}
+
+void closeNetwork()
+{
+	if(networkInit)
+		smbClose("smb");
+
+	networkInit = false;
+} 
+
+ 
+int smbmenu ()
+{
+  int prevmenu = menu;
+  int quit = 0;
+  int ret;
+  int count = 5;
+  char items[5][25];
+
+  menu = 1;
+
+  while (quit == 0)
+  {
+    sprintf (items[0], "IP: %s", SMSSettings.ip);
+    sprintf (items[1], "Share: %s", SMSSettings.share);
+	sprintf (items[2], "Username: %s", SMSSettings.user);
+    sprintf (items[3], "Password: %s", SMSSettings.pwd);	
+	sprintf (items[4],"Return to previous");
+
+
+    ret = domenu (&items[0], count, 0);
+    switch (ret)
+    {
+      case -1:
+	  case 4:
+	    quit = 1;
+        break;
+
+      case 0:
+	  // open OnScreenKeyboard for user Settings in future versions...
+      case 1:
+	  case 2:
+	  case 3:	  
+        break;
+
+    }
+  }
+  menu = prevmenu;
+  return 0;
+}
+#endif
+
+/****************************************************************************
  * Main Option menu
 *
 ****************************************************************************/
@@ -605,11 +698,17 @@ void optionmenu ()
   u8 prevmenu = menu;
   menu = 0;
 
+#ifdef HW_RVL
+  char miscmenu[4][25];
+  count = 4;
+#else
   char miscmenu[3][25];
+#endif
   strcpy (menutitle, "Press B to return");
   sprintf (miscmenu[0], "System Options");
   sprintf (miscmenu[1], "Display Options");
   sprintf (miscmenu[2], "Controls Options");
+  sprintf (miscmenu[3], "SMB Settings");
 
   while (quit == 0)
   {
@@ -627,6 +726,11 @@ void optionmenu ()
       case 2:  /*** Controllers ***/
         ctrlmenu();
         break;
+#ifdef HW_RVL		
+	  case 3:  /*** SMB ***/
+		smbmenu();
+		break;
+#endif
       case -1:
         quit = 1;
         break;
@@ -700,11 +804,12 @@ int loadmenu ()
   int ret,count,size;
   int quit = 0;
 #ifdef HW_RVL
-  char item[5][25] = {
+  char item[6][25] = {
     {"Load Recent"},
     {"Load from SD"},
     {"Load from USB"},
     {"Load from DVD"},
+	{"Load from SMB"},
     {"Stop DVD Motor"}
   };
 #else
@@ -721,7 +826,7 @@ int loadmenu ()
   while (quit == 0)
   {
 #ifdef HW_RVL
-    count = 4 + dvd_on;
+    count = 5 + dvd_on;
 #else
     count = 3 + dvd_on;
 #endif
@@ -756,9 +861,32 @@ int loadmenu ()
         }
         break;
   
-      /*** Stop DVD Disc ***/
+ 
 #ifdef HW_RVL
-      case 4:  
+
+	   /*** Load from SMB Share ***/
+	  case 4:
+  
+		if (!networkInit)
+			initNetwork();
+			
+	    load_menu = menu;
+        size = FAT_Open(ret,smsrom);
+        if (size)
+        {
+     	  memfile_autosave();
+		  smsromsize = size;
+          load_rom ("");
+		  system_poweron ();
+		  sprintf(rom_filename,"%s",filelist[selection].filename);
+		  rom_filename[strlen(rom_filename) - 4] = 0;
+		  memfile_autoload();
+		  return 1;
+        }
+        break;
+
+       /*** Stop DVD Disc ***/
+      case 5:  
 #else
       case 3:
 #endif
@@ -847,7 +975,7 @@ void MainMenu ()
         break;
 
       case 4:
-        optionmenu();
+	    optionmenu();
         break;
 
       case 5:

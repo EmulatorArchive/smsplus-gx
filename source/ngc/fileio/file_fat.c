@@ -230,6 +230,7 @@ int FAT_Open(int type, u8 *buffer)
 #ifdef HW_RVL
   if (type == TYPE_SD) sprintf (root, "sd:");
   else if (type == TYPE_USB) sprintf (root, "usb:");
+  else if (type == TYPE_SMB) sprintf (root, "smb:");
 #endif
 
   /* if FAT device type changed, reload filelist */
