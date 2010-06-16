@@ -116,15 +116,16 @@ static int FAT_ManageFile(char *filename, int direction)
       filesize = system_save_state(savebuffer);
 
       /* write buffer */
-      done = fwrite(savebuffer, 1, filesize, fp);
-      if (done < filesize)
+      while (filesize > FATCHUNK)
       {
-        sprintf (filename, "Error writing %s", pathname);
-        WaitPrompt(filename);
-        return 0;
+        fwrite(savebuffer + done, FATCHUNK, 1, fp);
+        done+=FATCHUNK;
+        filesize-=FATCHUNK;
       }
-
+      fwrite(savebuffer + done, filesize, 1, fp);
+      done+=filesize;
       fclose(fp);
+
       sprintf (filename, "Saved %d bytes successfully", done);
       WaitPrompt (filename);
       return 1;
@@ -137,13 +138,14 @@ static int FAT_ManageFile(char *filename, int direction)
       fseek(fp, 0, SEEK_SET);
 
       /* read into buffer (32k blocks) */
-      done = fread(savebuffer, 1, filesize, fp);
-      if (done < filesize)
+      while (filesize > FATCHUNK)
       {
-        sprintf (filename, "Error reading %s", pathname);
-        WaitPrompt(filename);
-        return 0;
+        fread(savebuffer + done, FATCHUNK, 1, fp);
+        done+=FATCHUNK;
+        filesize-=FATCHUNK;
       }
+      fread(savebuffer + done, filesize, 1, fp);
+      done+=filesize;
       fclose(fp);
 
       /* load STATE */

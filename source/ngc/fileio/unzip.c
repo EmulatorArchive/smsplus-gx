@@ -119,7 +119,7 @@ int UnZipBuffer (unsigned char *outbuffer, u64 discoffset, char *filename)
   if (fatfile)
   {
     fseek(fatfile, 0, SEEK_SET);
-    fread(readbuffer, 1, 2048, fatfile);
+    fread(readbuffer, 2048, 1, fatfile);
   }
   else
   {
@@ -182,7 +182,7 @@ int UnZipBuffer (unsigned char *outbuffer, u64 discoffset, char *filename)
     
     if (fatfile)
     {
-      fread(readbuffer, 1, 2048, fatfile);
+      fread(readbuffer, 2048, 1, fatfile);
     }
     else
     {

@@ -44,36 +44,51 @@ static void writemem_mapper_none(int offset, int data)
 
 static void writemem_mapper_sega(int offset, int data)
 {
-  cpu_writemap[offset >> 10][offset & 0x03FF] = data;
   if(offset >= 0xFFFC)
-    sms_mapper_w(offset & 3, data);
+  {
+    mapper_16k_w(offset, data);
+  }
+  cpu_writemap[offset >> 10][offset & 0x03FF] = data;
 }
 
 static void writemem_mapper_codies(int offset, int data)
 {
-  switch(offset)
+  if (offset == 0x0000)
   {
-    case 0x0000:
-      sms_mapper_w(1, data);
-      return;
-    case 0x4000:
-      sms_mapper_w(2, data);
-      return;
-    case 0x8000:
-      sms_mapper_w(3, data);
-      return;
-    default:
-      cpu_writemap[offset >> 10][offset & 0x03FF] = data;
-      return;
+    mapper_16k_w(1,data);
+    return;
   }
+  if (offset == 0x4000)
+  {
+    mapper_16k_w(2,data);
+    return;
+  }
+  if (offset == 0x8000)
+  {
+    mapper_16k_w(3,data);
+    return;
+  }
+  cpu_writemap[offset >> 10][offset & 0x03FF] = data;
 }
 
-static void writemem_mapper_korean(int offset, int data)
+static void writemem_mapper_korea_msx(int offset, int data)
+{
+  if (offset <= 0x0003)
+  {
+    mapper_8k_w(offset,data);
+    return;
+  }
+  cpu_writemap[offset >> 10][offset & 0x03FF] = data;
+}
+
+static void writemem_mapper_korea(int offset, int data)
 {
   if (offset == 0xA000)
-    sms_mapper_w(3, data);
-  else
-    cpu_writemap[offset >> 10][offset & 0x03FF] = data;
+  {
+    mapper_16k_w(3,data);
+    return;
+  }
+  cpu_writemap[offset >> 10][offset & 0x03FF] = data;
 }
 
 
@@ -81,19 +96,23 @@ void mapper_reset(void)
 {
   switch(slot.mapper)
   {
-    case MAPPER_CODIES:
-      cpu_writemem16 = writemem_mapper_codies;
-      break;
-
     case MAPPER_NONE:
       cpu_writemem16 = writemem_mapper_none;
       break;
 
-    case MAPPER_KOREAN:
-      cpu_writemem16 = writemem_mapper_korean;
+    case MAPPER_CODIES:
+      cpu_writemem16 = writemem_mapper_codies;
       break;
 
-    case MAPPER_SEGA:
+    case MAPPER_KOREA:
+      cpu_writemem16 = writemem_mapper_korea;
+      break;
+
+    case MAPPER_KOREA_MSX:
+      cpu_writemem16 = writemem_mapper_korea_msx;
+      break;
+
+    default:
       cpu_writemem16 = writemem_mapper_sega;
       break;
   }
@@ -264,22 +283,36 @@ void sms_reset(void)
 
     default:
     {
-      /* reset Cartridge paging */
+      /* default cartridge ROM mapping at $0000-$BFFF (first 32k mirrored) */
+      for(i = 0x00; i <= 0x2F; i++)
+      {
+        cpu_readmap[i]  = &slot.rom[(i & 0x1F) << 10];
+        cpu_writemap[i] = dummy_write;
+      }
+
+      /* enable internal RAM at $C000-$FFFF (8k mirrored) */
+      for(i = 0x30; i <= 0x3F; i++)
+      {
+          cpu_readmap[i] = &sms.wram[(i & 0x07) << 10];
+          cpu_writemap[i] = &sms.wram[(i & 0x07) << 10];
+      }
+
+      /* reset cartridge paging registers */
       switch(cart.mapper)
       {
-        case MAPPER_CODIES:
-        case MAPPER_KOREAN:
+        case MAPPER_NONE:
+        case MAPPER_SEGA:
           cart.fcr[0] = 0;
           cart.fcr[1] = 0;
           cart.fcr[2] = 1;
-          cart.fcr[3] = 0;
+          cart.fcr[3] = 2;
           break;
 
         default:
           cart.fcr[0] = 0;
           cart.fcr[1] = 0;
           cart.fcr[2] = 1;
-          cart.fcr[3] = 2;
+          cart.fcr[3] = 0;
           break;
       }
 
@@ -308,16 +341,21 @@ void sms_reset(void)
         }
       }
 
-      /* $0000-$03ff (ROM) */
-      cpu_readmap[0]  = &slot.rom[0];
-      cpu_writemap[0] = dummy_write;
-
-      /* $0400-$FFFF (ROM/RAM)*/
-      sms_mapper_w(0,slot.fcr[0]);
-      sms_mapper_w(1,slot.fcr[1]);
-      sms_mapper_w(2,slot.fcr[2]);
-      sms_mapper_w(3,slot.fcr[3]);
-
+      /* reset memory map */
+      if (slot.mapper != MAPPER_KOREA_MSX)
+      {
+        mapper_16k_w(0,slot.fcr[0]);
+        mapper_16k_w(1,slot.fcr[1]);
+        mapper_16k_w(2,slot.fcr[2]);
+        mapper_16k_w(3,slot.fcr[3]);
+      }
+      else
+      {
+        mapper_8k_w(0,slot.fcr[0]);
+        mapper_8k_w(1,slot.fcr[1]);
+        mapper_8k_w(2,slot.fcr[2]);
+        mapper_8k_w(3,slot.fcr[3]);
+      }
       break;
     }
   }
@@ -326,62 +364,129 @@ void sms_reset(void)
   mapper_reset();
 }
 
-void sms_mapper_w(int address, int data)
+void mapper_8k_w(int address, int data)
 {
   int i;
 
-  /* Calculate ROM page index (incl. previous increment set in $FFFC register) */
-  uint8 page = (slot.fcr[0] & 3) ? ((data + (4 - (slot.fcr[0] & 3))*8) % slot.pages) : (data % slot.pages);
-
+  /* cartridge ROM page (8k) index */
+  uint8 page = data % (slot.pages << 1);
+  
   /* Save frame control register data */
   slot.fcr[address] = data;
 
-  switch(address)
+  switch (address & 3)
   {
-    case 0:
+    case 0: /* cartridge ROM bank (16k) at $8000-$9FFF */
+    {
+      for(i = 0x20; i <= 0x27; i++)
+      {
+        cpu_readmap[i] = &slot.rom[(page << 13) | ((i & 0x07) << 10)];
+      }
+      break;
+    }
+    
+    case 1: /* cartridge ROM bank (16k) at $A000-$BFFF */
+    {
+      for(i = 0x28; i <= 0x2F; i++)
+      {
+        cpu_readmap[i] = &slot.rom[(page << 13) | ((i & 0x07) << 10)];
+      }
+      break;
+    }
+    
+    case 2: /* cartridge ROM bank (16k) at $4000-$5FFF */
+    {
+      for(i = 0x10; i <= 0x17; i++)
+      {
+        cpu_readmap[i] = &slot.rom[(page << 13) | ((i & 0x07) << 10)];
+      }
+      break;
+    }
+    
+    case 3: /* cartridge ROM bank (16k) at $6000-$7FFF */
+    {
+      for(i = 0x18; i <= 0x1F; i++)
+      {
+        cpu_readmap[i] = &slot.rom[(page << 13) | ((i & 0x07) << 10)];
+      }
+      break;
+    }
+  }
+}
+    
+void mapper_16k_w(int address, int data)
+{
+  int i;
+
+  /* cartridge ROM page (16k) index */
+  uint8 page = data % slot.pages;
+  
+  /* page index increment (SEGA mapper) */
+  if (slot.fcr[0] & 0x03)
+  {
+    page = (page + ((4 - (slot.fcr[0] & 0x03)) << 3)) % slot.pages;
+  }
+
+  /* save frame control register data */
+  slot.fcr[address] = data;
+
+  switch (address & 3)
+  {
+    case 0: /* control register (SEGA mapper) */
+    {
       if(data & 0x08)
       {
         /* external RAM (upper or lower 16K) mapped at $8000-$BFFF */
-        sms.save = 1;
-        uint32 offset = (data & 0x04) ? 0x4000 : 0x0000;
+        int offset = (data & 0x04) ? 0x4000 : 0x0000;
         for(i = 0x20; i <= 0x2F; i++)
         {
-          cpu_writemap[i] = cpu_readmap[i]  = &cart.sram[offset + ((i & 0x0F) << 10)];
+          cpu_readmap[i] = cpu_writemap[i] = &cart.sram[offset + ((i & 0x0F) << 10)];
         }
+        sms.save = 1;
       }
       else
       {
-        /* ROM mapped at $8000-$BFFF */
+        page = slot.fcr[3] % slot.pages;
+        
+        /* page index increment (SEGA mapper) */
+        if (slot.fcr[0] & 0x03)
+        {
+          page = (page + ((4 - (slot.fcr[0] & 0x03)) << 3)) % slot.pages;
+        }
+
+        /* cartridge ROM mapped at $8000-$BFFF */
         for(i = 0x20; i <= 0x2F; i++)
         {
-          cpu_readmap[i] = &slot.rom[((slot.fcr[3] % slot.pages) << 14) | ((i & 0x0F) << 10)];
+          cpu_readmap[i] = &slot.rom[(page << 14) | ((i & 0x0F) << 10)];
           cpu_writemap[i] = dummy_write;
         }
       }
 
       if(data & 0x10)
       {
-        /* external RAM (upper 16K) mapped at $C000-$FFFF */
-        sms.save = 1;
+        /* external RAM (lower 16K) mapped at $C000-$FFFF */
         for(i = 0x30; i <= 0x3F; i++)
         {
-          cpu_writemap[i] = cpu_readmap[i]  = &cart.sram[0x4000 + ((i & 0x0F) << 10)];
+          cpu_writemap[i] = cpu_readmap[i]  = &cart.sram[(i & 0x0F) << 10];
         }
+        sms.save = 1;
       }
       else
       {
-        /* internal RAM (8K mirrorred) mapped at $8000-$BFFF */
+        /* internal RAM (8K mirrorred) mapped at $C000-$FFFF */
         for(i = 0x30; i <= 0x3F; i++)
         {
           cpu_writemap[i] = cpu_readmap[i] = &sms.wram[(i & 0x07) << 10];
         }
       }
       break;
+    }
 
-    case 1:
+    case 1: /* cartridge ROM bank (16k) at $0000-$3FFF */
+    {
+      /* first 1k is not fixed (CODEMASTER mapper) */
       if (slot.mapper == MAPPER_CODIES)
       {
-        /* First 1 Kbyte is not fixed */
         cpu_readmap[0] = &slot.rom[(page << 14)];
       }
 
@@ -390,22 +495,30 @@ void sms_mapper_w(int address, int data)
         cpu_readmap[i] = &slot.rom[(page << 14) | ((i & 0x0F) << 10)];
       }
       break;
+    }
 
-    case 2:
+    case 2: /* cartridge ROM bank (16k) at $4000-$7FFF */
+    {
+      for(i = 0x10; i <= 0x1F; i++)
+      {
+        cpu_readmap[i] = &slot.rom[(page << 14) | ((i & 0x0F) << 10)];
+      }
+
+      /* Ernie Elf's Golf external RAM switch */
       if (slot.mapper == MAPPER_CODIES)
       {
         if (data & 0x80)
         {
-          /* internal RAM mapped at $A000-$C000 */
-          sms.save = 1;
+          /* external RAM (8k) mapped at $A000-$BFFF */
           for(i = 0x28; i <= 0x2F; i++)
           {
             cpu_writemap[i] = cpu_readmap[i]  = &cart.sram[(i & 0x0F) << 10];
           }
+          sms.save = 1;
         }
         else
         {
-          /* ROM mapped at $A000-$C000 */
+          /* cartridge ROM mapped at $A000-$BFFF */
           for(i = 0x28; i <= 0x2F; i++)
           {
             cpu_readmap[i] = &slot.rom[((slot.fcr[3] % slot.pages) << 14) | ((i & 0x0F) << 10)];
@@ -413,23 +526,30 @@ void sms_mapper_w(int address, int data)
           }
         }
       }
+      break;
+    }
 
-      for(i = 0x10; i <= 0x1F; i++)
+    case 3: /* cartridge ROM bank (16k) at $8000-$BFFF */
+    {
+      /* check that external RAM (16k) is not mapped at $8000-$BFFF (SEGA mapper) */
+      if ((slot.fcr[0] & 0x08)) break;
+
+      /* first 8k */
+      for(i = 0x20; i <= 0x27; i++)
+      {
+        cpu_readmap[i] = &slot.rom[(page << 14) | ((i & 0x0F) << 10)];
+      }
+
+      /* check that external RAM (8k) is not mapped at $A000-$BFFF (CODEMASTER mapper) */
+      if ((slot.mapper == MAPPER_CODIES) && (slot.fcr[2] & 0x80)) break;
+
+      /* last 8k */
+      for(i = 0x28; i <= 0x2F; i++)
       {
         cpu_readmap[i] = &slot.rom[(page << 14) | ((i & 0x0F) << 10)];
       }
       break;
-
-    case 3:
-      if(!(slot.fcr[0] & 0x08))
-      {
-        for(i = 0x20; i <= 0x2F; i++)
-        {
-          cpu_readmap[i] = &slot.rom[(page << 14) | ((i & 0x0F) << 10)];
-          cpu_writemap[i] = dummy_write;
-        }
-      }
-      break;
+    }
   }
 }
 

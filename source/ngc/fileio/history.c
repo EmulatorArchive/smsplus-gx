@@ -102,12 +102,11 @@ void history_load()
   /* open file for reading */
   sprintf (pathname, "%s/history.ini", DEFAULT_PATH);
   FILE *fp = fopen(pathname, "rb");
-  if (fp == NULL) return;
-
-  /* read file */
-  fread(&history, sizeof(history), 1, fp);
-
-  fclose(fp);
+  if (fp)
+  {
+    fread(&history, sizeof(history), 1, fp);
+    fclose(fp);
+  }
 }
 
 void set_history_defaults(void)
