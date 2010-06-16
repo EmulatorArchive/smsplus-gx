@@ -283,6 +283,31 @@ void sms_reset(void)
 
     default:
     {
+      /* SMS BIOS support */
+      if (IS_SMS)
+      {
+        if (bios.enabled == 3)
+        {
+          /* reset BIOS paging */
+          bios.fcr[0] = 0;
+          bios.fcr[1] = 0;
+          bios.fcr[2] = 1;
+          bios.fcr[3] = 2;
+
+          /* enable BIOS ROM */
+          slot.rom    = bios.rom;
+          slot.pages  = bios.pages;
+          slot.mapper = MAPPER_SEGA;
+          slot.fcr    = &bios.fcr[0];
+          sms.memctrl = 0xE0;
+        }
+        else
+        {
+          /* save Memory Control register value in RAM */
+          sms.wram[0] = sms.memctrl;
+        }
+      }
+
       /* default cartridge ROM mapping at $0000-$BFFF (first 32k mirrored) */
       for(i = 0x00; i <= 0x2F; i++)
       {
@@ -314,31 +339,6 @@ void sms_reset(void)
           cart.fcr[2] = 1;
           cart.fcr[3] = 0;
           break;
-      }
-
-      /* SMS BIOS support */
-      if (IS_SMS)
-      {
-        if (bios.enabled == 3)
-        {
-          /* reset BIOS paging */
-          bios.fcr[0] = 0;
-          bios.fcr[1] = 0;
-          bios.fcr[2] = 1;
-          bios.fcr[3] = 2;
-
-          /* enable BIOS ROM */
-          slot.rom    = bios.rom;
-          slot.pages  = bios.pages;
-          slot.mapper = MAPPER_SEGA;
-          slot.fcr    = &bios.fcr[0];
-          sms.memctrl = 0xE0;
-        }
-        else
-        {
-          /* save Memory Control register value in RAM */
-          sms.wram[0] = sms.memctrl;
-        }
       }
 
       /* reset memory map */
