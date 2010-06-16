@@ -64,7 +64,7 @@ static void load_bios()
   FILE *fp = fopen(pathname, "rb");
   if (fp)
   {
-    fread(coleco.rom, 1, 0x2000, fp);
+    fread(coleco.rom, 0x2000, 1, fp);
     fclose(fp);
   }
 
@@ -72,36 +72,43 @@ static void load_bios()
   bios.enabled = 0;
   sprintf (pathname, "%s/BIOS.sms",DEFAULT_PATH);
   fp = fopen(pathname, "rb");
-  if (fp == NULL) return;
+  if (fp)
+  {
+    /* get BIOS size */
+    fseek(fp , 0 , SEEK_END);
+    int filesize = ftell (fp);
+    fseek(fp, 0, SEEK_SET);
 
-  /* get BIOS size */
-  fseek(fp , 0 , SEEK_END);
-  int filesize = ftell (fp);
-  fseek(fp, 0, SEEK_SET);
+    /* read BIOS file */
+    int done = 0;
+    while (filesize > FATCHUNK)
+    {
+      fread(bios.rom + done, FATCHUNK, 1, fp);
+      done+=FATCHUNK;
+      filesize-=FATCHUNK;
+    }
+    fread(bios.rom + done, filesize, 1, fp);
+    fclose(fp);
+  
+    /* set BIOS size */
+    if (filesize < 0x4000) filesize = 0x4000;
+    bios.pages = filesize / 0x4000;
 
-  /* read BIOS file */
-  fread(bios.rom, 1, filesize, fp);
-  fclose(fp);
+    /* set BIOS flag */
+    bios.enabled = option.use_bios | 2;
+    set_config();
+  }
 
-  /* set BIOS size */
-  if (filesize < 0x4000) filesize = 0x4000;
-  bios.pages = filesize / 0x4000;
-
-  /* set BIOS flag */
-  if (option.use_bios) bios.enabled = 3;
-  else bios.enabled = 2;
-
-  set_config();
 }
 
 static void init_machine (void)
 {
-  /* Allocate cart_rom here */
-  smsrom = memalign(32, 1024 *1024);
+  /* allocate Cartridge ROM */
+  smsrom = memalign(32, 1048576);
   smsromsize = 0;
 
-  /* Look for BIOS rom */
-  bios.rom = memalign(32, 1024 * 1024);
+  /* allocate internal BIOS ROM */
+  bios.rom = memalign(32, 1048576);
   load_bios();
 
   /* allocate global work bitmap */

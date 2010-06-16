@@ -35,10 +35,11 @@ enum {
 };
 
 enum {
-  MAPPER_NONE     = 0,
-  MAPPER_SEGA     = 1,
+  MAPPER_NONE       = 0,
+  MAPPER_SEGA       = 1,
   MAPPER_CODIES     = 2,
-  MAPPER_KOREAN     = 3
+  MAPPER_KOREA      = 3,
+  MAPPER_KOREA_MSX  = 4
 };
 
 enum {
@@ -152,7 +153,8 @@ extern void sms_init(void);
 extern void sms_reset(void);
 extern void sms_shutdown(void);
 extern void mapper_reset(void);
-extern void sms_mapper_w(int address, int data);
+extern void mapper_8k_w(int address, int data);
+extern void mapper_16k_w(int address, int data);
 extern int sms_irq_callback(int param);
 
 #endif /* _SMS_H_ */

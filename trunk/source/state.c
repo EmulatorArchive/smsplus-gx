@@ -154,14 +154,24 @@ void system_load_state(void *mem)
     slot.pages  = cart.pages;
     slot.mapper = cart.mapper;
     slot.fcr = &cart.fcr[0];
-    cpu_readmap[0]  = &cart.rom[0];
 
     /* Restore mapping */
     mapper_reset();
-    sms_mapper_w(0, cart.fcr[0]);
-    sms_mapper_w(1, cart.fcr[1]);
-    sms_mapper_w(2, cart.fcr[2]);
-    sms_mapper_w(3, cart.fcr[3]);
+    cpu_readmap[0]  = &slot.rom[0];
+    if (slot.mapper != MAPPER_KOREA_MSX)
+    {
+      mapper_16k_w(0,slot.fcr[0]);
+      mapper_16k_w(1,slot.fcr[1]);
+      mapper_16k_w(2,slot.fcr[2]);
+      mapper_16k_w(3,slot.fcr[3]);
+    }
+    else
+    {
+      mapper_8k_w(0,slot.fcr[0]);
+      mapper_8k_w(1,slot.fcr[1]);
+      mapper_8k_w(2,slot.fcr[2]);
+      mapper_8k_w(3,slot.fcr[3]);
+    }
   }
 
   /* Force full pattern cache update */

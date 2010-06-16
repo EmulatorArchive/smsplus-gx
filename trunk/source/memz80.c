@@ -89,11 +89,20 @@ void memctrl_w(uint8 data)
     if (slot.rom)
     {
       cpu_readmap[0]  = &slot.rom[0];
-      cpu_writemap[0] = dummy_write;
-      sms_mapper_w(0,slot.fcr[0]);
-      sms_mapper_w(1,slot.fcr[1]);
-      sms_mapper_w(2,slot.fcr[2]);
-      sms_mapper_w(3,slot.fcr[3]);
+      if (slot.mapper != MAPPER_KOREA_MSX)
+      {
+        mapper_16k_w(0,slot.fcr[0]);
+        mapper_16k_w(1,slot.fcr[1]);
+        mapper_16k_w(2,slot.fcr[2]);
+        mapper_16k_w(3,slot.fcr[3]);
+      }
+      else
+      {
+        mapper_8k_w(0,slot.fcr[0]);
+        mapper_8k_w(1,slot.fcr[1]);
+        mapper_8k_w(2,slot.fcr[2]);
+        mapper_8k_w(3,slot.fcr[3]);
+      }
     }
     else
     {

@@ -198,7 +198,14 @@ int FAT_LoadFile (u8 *buffer)
         char msg[50];
         sprintf(msg,"Loading %d bytes...", length);
         ShowAction(msg);
-        fread(buffer, 1, length, sdfile);
+        int done = 0;
+        while (length > FATCHUNK)
+        {
+          fread(buffer + done, FATCHUNK, 1, sdfile);
+          done+=FATCHUNK;
+          length-=FATCHUNK;
+        }
+        fread(buffer + done, length, 1, sdfile);
         fclose(sdfile);
         return length;
       }

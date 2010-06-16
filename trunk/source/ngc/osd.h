@@ -19,6 +19,9 @@
 
 #define DEFAULT_PATH "/smsplus"
 
+#define FATCHUNK 2048
+
+
 /* globals */
 extern u32 diff_usec(long long start,long long end);
 extern long long gettime();
