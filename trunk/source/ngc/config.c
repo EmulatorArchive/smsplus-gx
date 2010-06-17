@@ -23,9 +23,9 @@
 #include "shared.h"
 
 #ifdef HW_RVL
-#define CONFIG_VERSION "SMSPLUS 1.3.1W"
+#define CONFIG_VERSION "SMSPLUS 1.3.2W"
 #else
-#define CONFIG_VERSION "SMSPLUS 1.3.1G"
+#define CONFIG_VERSION "SMSPLUS 1.3.2G"
 #endif
 
 void config_save()
@@ -92,8 +92,7 @@ void set_option_defaults ()
   option.sndrate      = 48000;
   option.country      = 0;
   option.console      = 0;
-  option.fm_enable    = 1;
-  option.fm_which     = SND_EMU2413;
+  option.fm           = SND_NONE;
   option.overscan     = 1;
   option.xshift       = 0;
   option.yshift       = 0;

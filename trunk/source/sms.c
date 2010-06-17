@@ -46,7 +46,7 @@ static void writemem_mapper_sega(int offset, int data)
 {
   if(offset >= 0xFFFC)
   {
-    mapper_16k_w(offset, data);
+    mapper_16k_w(offset & 3, data);
   }
   cpu_writemap[offset >> 10][offset & 0x03FF] = data;
 }
@@ -430,7 +430,7 @@ void mapper_16k_w(int address, int data)
   /* save frame control register data */
   slot.fcr[address] = data;
 
-  switch (address & 3)
+  switch (address)
   {
     case 0: /* control register (SEGA mapper) */
     {

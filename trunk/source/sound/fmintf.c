@@ -25,7 +25,6 @@ void FM_Init(void)
   }
 }
 
-
 void FM_Shutdown(void)
 {
   switch(snd.fm_which)
@@ -45,7 +44,6 @@ void FM_Shutdown(void)
   }
 }
 
-
 void FM_Reset(void)
 {
   switch(snd.fm_which)
@@ -61,7 +59,6 @@ void FM_Reset(void)
     }
 }
 
-
 void FM_Update(int16 **buffer, int length)
 {
   switch(snd.fm_which)
@@ -74,12 +71,6 @@ void FM_Update(int16 **buffer, int length)
       YM2413UpdateOne(0, buffer, length);
       break;
   }
-}
-
-void FM_WriteReg(int reg, int data)
-{
-  FM_Write(0, reg);
-  FM_Write(1, data);
 }
 
 void FM_Write(int offset, int data)

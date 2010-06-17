@@ -168,7 +168,8 @@ int FAT_LoadFile (u8 *buffer)
   if (length > 0)
   {
     /* Add/move the file to the top of the history. */
-    if(!useHistory) history_add_file(fatdir, filelist[selection].filename);
+    if (!useHistory)
+      history_add_file(fatdir, filelist[selection].filename);
 
     /* full filename */
     char fname[MAXPATHLEN];
@@ -202,12 +203,13 @@ int FAT_LoadFile (u8 *buffer)
         while (length > FATCHUNK)
         {
           fread(buffer + done, FATCHUNK, 1, sdfile);
-          done+=FATCHUNK;
-          length-=FATCHUNK;
+          done += FATCHUNK;
+          length -= FATCHUNK;
         }
         fread(buffer + done, length, 1, sdfile);
+        done += length;
         fclose(sdfile);
-        return length;
+        return done;
       }
     }
     else

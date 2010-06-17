@@ -23,19 +23,18 @@
  
 #include <mxml.h>
 
+#include "shared.h"
 #include "preferences.h"
-    
+#include "font.h"
+
+struct SSMSSettings SMSSettings;
+
+
 static mxml_node_t *xml = NULL;
 static mxml_node_t *data = NULL;
 static mxml_node_t *section = NULL;
 static mxml_node_t *item = NULL;
-
  
-void defaultSettings()
-{
-saveSettings();
-}
-
 static void createXMLSection(const char * name, const char * description)
 {
 	section = mxmlNewElement(data, "section");
@@ -52,9 +51,13 @@ static void createXMLSetting(const char * name, const char * description, const 
 }
 
 
-
-int saveSettings() {
-	
+/***************************************************************************
+ * saveSettings()
+ *
+ * Save Settings to XML File. 
+ ***************************************************************************/ 
+int saveSettings()
+{
 	xml = mxmlNewXML("1.0");
 	mxmlSetWrapMargin(0); // disable line wrapping
 
@@ -67,11 +70,11 @@ int saveSettings() {
 	createXMLSetting("pwd", "Share Password", SMSSettings.pwd);
 			
 	FILE *file;
-	file = fopen("sd:/smsplus/settings.xml", "wb");
+	file = fopen("/smsplus/settings.xml", "wb");
 	
-	if (file == NULL) {
-	
-	WaitPrompt("File = NULL");
+	if (file == NULL)
+  {
+	  WaitPrompt("File = NULL");
 		fclose(file);
 		return 0;
 	} 
@@ -88,19 +91,18 @@ int saveSettings() {
 
 
 /***************************************************************************
- * load_settings()
+ * loadSettings()
  *
  * Load Settings from XML File. 
  ***************************************************************************/ 
- 
-int load_settings() 
+int loadSettings() 
 {
-	FILE *fp = fopen("sd:/smsplus/settings.xml", "rb");
+	FILE *fp = fopen("/smsplus/settings.xml", "rb");
 		
 	if (fp == NULL) //File does not exist. create one!
 	{
 		fclose(fp);
-		defaultSettings();
+		saveSettings();
 	} 
 	else 
 	{
@@ -115,8 +117,6 @@ int load_settings()
 			
 			data = mxmlFindElement(xml, xml, "settings", NULL, NULL,
 			MXML_DESCEND);
-			
-				
 
 			item = mxmlFindElement(xml, xml, "setting", "name", "ip", MXML_DESCEND);
 			if(item)
@@ -145,7 +145,7 @@ int load_settings()
 			mxmlDelete(data);
 			mxmlDelete(xml);
 			return 1;
-			} 
+    } 
 		else 
 		{
 			WaitPrompt("Settings.xml not OK. Please check your Settings.xml!");

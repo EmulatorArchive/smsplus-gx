@@ -3,6 +3,7 @@
 #define _FMINTF_H_
 
 enum {
+  SND_NONE,     /* YM2413 emulation disabled */
   SND_EMU2413,  /* Mitsutaka Okazaki's YM2413 emulator */
   SND_YM2413    /* Jarek Burczynski's YM2413 emulator */
 };

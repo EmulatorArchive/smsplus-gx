@@ -29,6 +29,7 @@
 #include "dvd.h"
 #else
 #include <di/di.h>
+#include "preferences.h"
 #endif
 
 #include <fat.h>
@@ -169,6 +170,10 @@ int main (int argc, char *argv[])
   legal();
   set_option_defaults ();
   config_load();
+#ifdef HW_RVL
+  /* Load SMB Settings */
+  loadSettings();
+#endif
 
   /* Restore Recent Files list */
   set_history_defaults();

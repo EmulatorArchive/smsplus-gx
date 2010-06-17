@@ -35,8 +35,7 @@ typedef struct
   int country;
   int console;
   int display;
-  int fm_enable;
-  int fm_which;
+  int fm;
   int codies;
   int16 xshift;
   int16 yshift;
