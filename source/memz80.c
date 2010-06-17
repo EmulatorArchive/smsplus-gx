@@ -45,10 +45,9 @@ void memctrl_w(uint8 data)
   if (IS_SMS)
   {
     /* autodetect loaded BIOS ROM */
-    if ((bios.enabled != 3) && ((data & 0xE8) == 0xE8))
+    if (!(bios.enabled & 2) && ((data & 0xE8) == 0xE8))
     {
-      bios.enabled |= 2;
-      if (option.use_bios) bios.enabled |= 1;
+      bios.enabled = option.use_bios | 2;
       memcpy(bios.rom, cart.rom, cart.size);
       memcpy(bios.fcr, cart.fcr, 4);
       bios.pages = cart.pages;

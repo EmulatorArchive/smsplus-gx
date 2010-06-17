@@ -42,7 +42,7 @@ int sound_init(void)
   int restore_sound = 0;
   int i;
 
-  snd.fm_which = option.fm_which;
+  snd.fm_which = option.fm;
   snd.fps = (sms.display == DISPLAY_NTSC) ? FPS_NTSC : FPS_PAL;
   snd.fm_clock = (sms.display == DISPLAY_NTSC) ? CLOCK_NTSC : CLOCK_PAL;
   snd.psg_clock = (sms.display == DISPLAY_NTSC) ? CLOCK_NTSC : CLOCK_PAL;
@@ -109,10 +109,12 @@ int sound_init(void)
     memset(snd.stream[i], 0, snd.buffer_size);
   }
 
+#ifndef NGC
   /* Allocate sound output streams */
   snd.output[0] = malloc(snd.buffer_size);
   snd.output[1] = malloc(snd.buffer_size);
   if(!snd.output[0] || !snd.output[1]) return 0;
+#endif
 
   /* Set up buffer pointers */
   fm_buffer = (int16 **)&snd.stream[STREAM_FM_MO];
@@ -120,13 +122,10 @@ int sound_init(void)
 
   /* Set up SN76489 emulation */
   SN76489_Init(0, snd.psg_clock, snd.sample_rate);
-  SN76489_Config(0, MUTE_ALLON, BOOST_ON, VOL_TRUNC, (sms.console < CONSOLE_SMS) ? FB_SC3000 : FB_SEGAVDP);
+  SN76489_Config(0, MUTE_ALLON, BOOST_ON, VOL_FULL, (sms.console < CONSOLE_SMS) ? FB_SC3000 : FB_SEGAVDP);
 
   /* Set up YM2413 emulation */
   FM_Init();
-
-  /* Inform other functions that we can use sound */
-  snd.enabled = 1;
 
   /* Restore YM2413 register settings */
   if(restore_sound)
@@ -136,6 +135,9 @@ int sound_init(void)
     free(fmbuf);
     free(psgbuf);
   }
+
+  /* Inform other functions that we can use sound */
+  snd.enabled = 1;
 
   return 1;
 }
@@ -158,6 +160,7 @@ void sound_shutdown(void)
     }
   }
 
+#ifndef NGC
   /* Free sound output buffers */
   for(i = 0; i < 2; i++)
   {
@@ -167,6 +170,7 @@ void sound_shutdown(void)
       snd.output[i] = NULL;
     }
   }
+#endif
 
   /* Shut down SN76489 emulation */
   SN76489_Shutdown();
@@ -287,8 +291,7 @@ void sound_mixer_ngc (int length)
 
 void psg_stereo_w(int data)
 {
-  if(!snd.enabled)
-    return;
+  if(!snd.enabled) return;
   SN76489_GGStereoWrite(0, data);
 }
 
@@ -299,8 +302,7 @@ void stream_update(int which, int position)
 
 void psg_write(int data)
 {
-  if(!snd.enabled)
-    return;
+  if(!snd.enabled) return;
   SN76489_Write(0, data);
 }
 
@@ -321,8 +323,6 @@ void fmunit_detect_w(int data)
 
 void fmunit_write(int offset, int data)
 {
-  if(!snd.enabled || !sms.use_fm)
-    return;
-
+  if(!snd.enabled || !sms.use_fm) return;
   FM_Write(offset, data);
 }

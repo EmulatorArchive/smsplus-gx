@@ -27,17 +27,19 @@
 #include "file_dvd.h"
 #include "file_fat.h"
 #include "filesel.h"
-#include <errno.h>
 
 #ifdef HW_RVL
-#include "preferences.h"
+#include <errno.h>
 #include <network.h>
 #include <smb.h>
 #include <wiiuse/wpad.h>
 #include <di/di.h>
-
-struct SSMSSettings SMSSettings;
+#include "preferences.h"
+static int networkInit;
 #endif
+
+static char menutitle[60] = { "" };
+static int menu = 0;
 
 /***************************************************************************
  * drawmenu
@@ -45,11 +47,6 @@ struct SSMSSettings SMSSettings;
  * As it says, simply draws the menu with a highlight on the currently
  * selected item :)
  ***************************************************************************/
-char menutitle[60] = { "" };
-int menu = 0;
-int networkInit;
-
-
 void drawmenu (char items[][25], int maxitems, int selected)
 {
   int i;
@@ -276,7 +273,7 @@ void dispmenu ()
     sprintf (items[7], "Center Y: %s%02d", option.yshift < 0 ? "-":"+", abs(option.yshift));
     sprintf (items[8], "Scale  X:  %02d", option.xscale);
     sprintf (items[9], "Scale  Y:  %02d", option.yscale);
-	sprintf (items[9], "Scale  Y:  %02d", option.yscale);
+	  sprintf (items[9], "Scale  Y:  %02d", option.yscale);
 
     ret = domenu (&items[0], count, 1);
 
@@ -359,35 +356,23 @@ void dispmenu ()
 * System options menu
 *
 ****************************************************************************/
-static int fm_type = 1;
-
 void sysmenu ()
 {
+  char items[9][25];
   s8 ret;
   u8 quit = 0;
   u8 count = 9;
   u8 prevmenu = menu;
   int i;
   menu = 0;
-
-  char items[9][25];
   
-  if (option.fm_enable)
-  {
-    fm_type = (option.fm_which == SND_EMU2413) ? 1 : 2;
-  }
-  else
-  {
-    fm_type = 0;
-  }
-
   while (quit == 0)
   {
     strcpy (menutitle, "Press B to return");
       
-    if (fm_type == 0) sprintf (items[0], "FM     -     OFF");
-    else if (fm_type == 1) sprintf (items[0], "FM     - EMU2413");
-    else if (fm_type == 2) sprintf (items[0], "FM     -  YM2413");
+    if (option.fm == 0) sprintf (items[0], "FM     -     OFF");
+    else if (option.fm == 1) sprintf (items[0], "FM     - EMU2413");
+    else if (option.fm == 2) sprintf (items[0], "FM     -  YM2413");
 
     if (option.country == 1) sprintf (items[1], "Country -    USA");
     else if (option.country == 2) sprintf (items[1], "Country -    EUR");
@@ -425,27 +410,16 @@ void sysmenu ()
 
     switch (ret)
     {
-      case 0:  /*** FM Enabled ***/
-        fm_type = (fm_type + 1) % 3;
-        if (fm_type == 0)
-        {
-          option.fm_enable = 0;
-        }
-        else if (fm_type == 1)
-        {
-          option.fm_enable = 1;
-          option.fm_which = SND_EMU2413;
-        }
-        else if (fm_type == 2)
-        {
-          option.fm_enable = 1;
-          option.fm_which = SND_YM2413;
-        }
+      case 0:  /*** FM chip emulation ***/
+        option.fm = (option.fm + 1) % 3;
         if ((bios.enabled == 3) || smsromsize)
+        {
+          set_config();
           system_init();
+        }
         break;
 
-      case 1:  /*** Country ***/
+      case 1:  /*** Console Region ***/
         option.country  = (option.country + 1) % 4;
         if ((bios.enabled == 3) || smsromsize)
         {
@@ -463,11 +437,11 @@ void sysmenu ()
         }
         break;
 
-      case 3: /*** sprite flickering ***/
+      case 3: /*** Sprite flickering ***/
         option.spritelimit ^= 1;
         break;
 
-      case 4:
+      case 4: /*** SMS palette intensity ***/
         option.sms_pal = (option.sms_pal + 1) % 3;
         if (option.sms_pal == 0)
         {
@@ -491,36 +465,37 @@ void sysmenu ()
           palette_sync(i);
         break;
 
-     case 5:
+     case 5: /*** TMS9918 palette intensity ***/
         option.tms_pal = (option.tms_pal + 1) % 3;
         for(i = 0; i < PALETTE_SIZE; i++) palette_sync(i);
         break;
 
-     case 6: /*** SMS BIOS ***/
+     case 6: /*** SMS BIOS support ***/
         option.use_bios ^= 1;
 
-        /* reset BIOS flag */
-        bios.enabled &= ~1;
-        if (option.use_bios)
-          bios.enabled |= 1;
-
+        /* enable BIOS on SMS only */
+        bios.enabled &= 2;
+        if (IS_SMS) bios.enabled |= option.use_bios;
         if ((bios.enabled == 3) || smsromsize)
+        {
           system_poweron();
+        }
         break;
 
-      case 7: /*** GG Extra mode ***/
+      case 7: /*** GG screen extra mode ***/
         option.extra_gg ^= 1;
         if ((bios.enabled == 3) || smsromsize)
+        {
           system_init();
+        }
         break;
 
-      case 8:  /*** FreezeState autoload/autosave ***/
+      case 8:  /*** Auto SaveState ***/
         option.autofreeze ++;
-        if (option.autofreeze > 2)
-          option.autofreeze = -1;
+        if (option.autofreeze > 2) option.autofreeze = -1;
         break;
 
-    case -1:
+      case -1:
         quit = 1;
         break;
     }
@@ -633,14 +608,11 @@ void initNetwork()
 		else
 			WaitPrompt("Wrong Parameters - Check your Settings.xml");
 	}
-	
 }
 
 void closeNetwork()
 {
-	if(networkInit)
-		smbClose("smb");
-
+	if(networkInit) smbClose("smb");
 	networkInit = false;
 } 
 
@@ -852,7 +824,7 @@ int loadmenu ()
           dvd_on = 1;
           memfile_autosave();
           smsromsize = size;
-          load_rom ("");
+          load_rom("");
           system_poweron ();
           sprintf(rom_filename,"%s",filelist[selection].filename);
           rom_filename[strlen(rom_filename) - 4] = 0;
@@ -864,24 +836,22 @@ int loadmenu ()
  
 #ifdef HW_RVL
 
-	   /*** Load from SMB Share ***/
-	  case 4:
+      /*** Load from SMB Share ***/
+      case 4:
   
-		if (!networkInit)
-			initNetwork();
-			
-	    load_menu = menu;
+        if (!networkInit) initNetwork();
+        load_menu = menu;
         size = FAT_Open(ret,smsrom);
         if (size)
         {
-     	  memfile_autosave();
-		  smsromsize = size;
+          memfile_autosave();
+          smsromsize = size;
           load_rom ("");
-		  system_poweron ();
-		  sprintf(rom_filename,"%s",filelist[selection].filename);
-		  rom_filename[strlen(rom_filename) - 4] = 0;
-		  memfile_autoload();
-		  return 1;
+          system_poweron ();
+          sprintf(rom_filename,"%s",filelist[selection].filename);
+          rom_filename[strlen(rom_filename) - 4] = 0;
+          memfile_autoload();
+          return 1;
         }
         break;
 

@@ -256,7 +256,7 @@ void set_config()
   sms.glasses_3d = 0;
   sms.device[0] = DEVICE_PAD2B;
   sms.device[1] = DEVICE_PAD2B;
-  sms.use_fm = option.fm_enable;
+  sms.use_fm = option.fm;
 
   /* console type detection */
   /* SMS Header is located at 0x7ff0 */
@@ -314,11 +314,9 @@ void set_config()
     }
   }
 
-  /* reinit bios */
-  if (IS_SMS)
-    bios.enabled |= (option.use_bios & 1);
-  else
-    bios.enabled &= ~1;
+  /* enable BIOS on SMS only */
+  bios.enabled &= 2;
+  if (IS_SMS) bios.enabled |= option.use_bios;
 
   /* force settings if AUTO is not set*/
   if (option.console == 1)

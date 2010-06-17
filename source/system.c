@@ -28,16 +28,10 @@ bitmap_t bitmap;
 cart_t cart;
 input_t input;
 
-static int line_z80 = 0;
-
 /* Run the virtual console emulation for one frame */
 void system_frame(int skip_render)
 {
-  int iline;
-
-  /* adjust Z80 cycle count from previous frame */
-  z80_cycle_count -= line_z80;
-  line_z80 = 0;
+  int iline, line_z80 = 0;
 
   /* Debounce pause key */
   if(input.system & INPUT_PAUSE)
@@ -54,7 +48,7 @@ void system_frame(int skip_render)
      sms.paused = 0;
   }
 
-  /* reset TMS Text offset counter */
+  /* Reset TMS Text offset counter */
   text_counter = 0;
 
   /* 3D glasses faking */
@@ -63,22 +57,22 @@ void system_frame(int skip_render)
   /* VDP register 9 is latched during VBLANK */
   vdp.vscroll = vdp.reg[9];
 
-  /* reset Horizontal counter */
+  /* Reload Horizontal Interrupt counter */
   vdp.left = vdp.reg[0x0A];
 
-  /* reset collision flag infos */
+  /* Reset collision flag infos */
   vdp.spr_col = 0xff00;
 
+  /* Line processing */
   for(vdp.line = 0; vdp.line < vdp.lpf; vdp.line++)
   {
     iline = vdp.height;
 
+    /* VDP line rendering */
     if(!skip_render)
     {
       render_line(vdp.line);
     }
-
-    line_z80 += CYCLES_PER_LINE;
 
     /* Horizontal Interrupt */
     if (sms.console >= CONSOLE_SMS)
@@ -93,7 +87,7 @@ void system_frame(int skip_render)
           {
             /* IRQ line is latched between instructions, on instruction last cycle          */
             /* This means that if Z80 cycle count is exactly a multiple of CYCLES_PER_LINE, */
-            /* interrupt would be triggered  AFTER the next instruction.                    */
+            /* interrupt should be triggered AFTER the next instruction.                    */
             if (!(z80_get_elapsed_cycles()%CYCLES_PER_LINE))
               z80_execute(1);
               
@@ -103,9 +97,9 @@ void system_frame(int skip_render)
       }
     }
 
+    /* Run Z80 CPU */
+    line_z80 += CYCLES_PER_LINE;
     z80_execute(line_z80 - z80_cycle_count);
-
-    sound_update(vdp.line);
 
     /* Vertical Interrupt */
     if(vdp.line == iline)
@@ -117,7 +111,13 @@ void system_frame(int skip_render)
         z80_set_irq_line(vdp.irq, ASSERT_LINE);
       }
     }
+
+    /* Run sound chips */
+    sound_update(vdp.line);
   }
+
+  /* Adjust Z80 cycle count for next frame */
+  z80_cycle_count -= line_z80;
 }
 
 void system_init(void)
@@ -148,7 +148,6 @@ void system_reset(void)
   render_reset();
   sound_reset();
   system_manage_sram(cart.sram, SLOT_CART, SRAM_LOAD);
-  line_z80 = 0;
 }
 
 

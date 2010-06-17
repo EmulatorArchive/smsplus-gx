@@ -21,17 +21,7 @@
  *
  ********************************************************************************/
  
-#define APPFOLDER      "smsplus"
 #define PREF_FILE_NAME "settings.xml"
- 
-int saveSettings();
-int load_settings();
-int update_settings();
-extern void WaitPrompt (char *msg);
-
-
-
-
  
 struct SSMSSettings{
 
@@ -47,3 +37,6 @@ struct SSMSSettings{
 };
 
 extern struct SSMSSettings SMSSettings;
+
+extern int saveSettings();
+extern int loadSettings();
