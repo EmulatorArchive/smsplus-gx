@@ -796,8 +796,11 @@ static void parse_satb(int line)
     yp = st[i];
 
     /* Found end of sprite list marker for non-extended modes? */
-    if(vdp.extended == 0 && yp == 0xD0)
+    if(vdp.extended == 0 && yp == 208)
       return;
+
+    /* Wrap Y coordinate for sprites > 240 */
+    if(yp > 240) yp -= 256;
 
     /* Compare sprite position with current line counter */
     yp = vc - yp;

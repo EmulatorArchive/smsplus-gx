@@ -3,24 +3,28 @@ SMSPLUS GX Changelog:
 ---------------------
 
 
-- adjusted SN76489 volume to real SMS2 output
+Sms Plus GX 1.3.1 (??/??/????):
+-------------------------------
+
 - updated Z80 core to last version (fix undocumented BIT instructions & interrupts timing)
 - improved Z80 timing accuracy: fixes sky flickering in Shadow of the Beast
-- implemented accurate VDP status flags, sprites, HV counters & register latches: SMS Plus now passes all tests in Flubba's VDP Test Program
-- improved Sprite parsing accuracy
+- improved VDP accuracy (Status flags, sprites, HV counters, etc), Sms Plus now passes all tests in Flubba's VDP Test Program
 - improved Sega Phaser autodetection: fixes lightgun support in some games
-- improved mappers emulation
-- fixed FM unit & I/O chip concurrent access
+- improved Mappers emulation
+- fixed FM unit & I/O chip concurrent access (Wonderboy III in Dragon's Trap, Time Soldiers)
 - fixed Korean BIOS support
 - fixed 3D-Glasses faking initial state
-- added emulation of 8K Korean mapper (Charles MacDonald)
-- added support for new released Korean games (Omar Cornut)
+- adjusted SN76489 volume to real SMS2 output
+- added emulation of new Korean 8k paging chip (Omar Cornut, Charles MacDonald)
+- added support for new released Korean games (Omar Cornut, Charles MacDonald)
 - added SG-1000 emulation
 - added Colecovision emulation
 - various code cleanup & improvments
 
 [NGC/Wii]
 - improved horizontal scaling
+- added SMB support (Talantyyr)
+- compiled with latest libogc/devkitPPC (SDHC support, DVDX fix, etc)
 
 
 
