@@ -88,14 +88,6 @@ typedef struct
     int ox, oy, ow, oh;
     int changed;
   } viewport;    
-#ifndef NGC
-  struct
-  {
-    uint8 color[PALETTE_SIZE][3];
-    uint8 dirty[PALETTE_SIZE];
-    uint8 update;
-  }pal;
-#endif
 } bitmap_t;
 
 /* Global variables */
