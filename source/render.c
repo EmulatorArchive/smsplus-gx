@@ -382,14 +382,7 @@ void render_line(int line)
   top_border = top_border + (vdp.height - bitmap.viewport.h) / 2;
 
   /* Point to current line in output buffer */
-#ifdef NGC
   linebuf = &internal_buffer[0];
-#else
-  if (bitmap.depth == 8)
-    linebuf = &bitmap.data[(overscan ? vline : line) * bitmap.pitch];
-  else
-    linebuf = &internal_buffer[0];
-#endif
 
   /* Sprite limit flag is set at the beginning of the line */
   if (vdp.spr_ovr)
@@ -484,15 +477,10 @@ void render_line(int line)
     if (!overscan)
       vline -= top_border;
 
-#ifdef NGC
     if (option.ntsc)
       sms_ntsc_blit(&sms_ntsc, ( SMS_NTSC_IN_T const * )pixel, internal_buffer, bitmap.viewport.w + 2*bitmap.viewport.x, vline);
     else
-     remap_8_to_16(vline);
-#else
-    if(bitmap.depth != 8)
-     remap_8_to_16(vline);
-#endif
+      remap_8_to_16(vline);
   }
 }
 
@@ -697,9 +685,9 @@ void palette_sync(int index)
   int r, g, b;
 
   /* VDP Mode */
-  if (vdp.reg[0] & 4)
+  if ((vdp.reg[0] & 4) || IS_GG)
   {
-    /* Mode 4 */
+    /* Mode 4 or Game Gear TMS mode*/
     if(sms.console == CONSOLE_GG)
     {
       /* GG palette */
@@ -751,14 +739,6 @@ void palette_sync(int index)
       b = sms_cram_expand_table[b];
     }
   }
-
-#ifndef NGC
-  bitmap.pal.color[index][0] = r;
-  bitmap.pal.color[index][1] = g;
-  bitmap.pal.color[index][2] = b;
-  bitmap.pal.dirty[index] = 1;
-  bitmap.pal.update = 1;
-#endif
 
   pixel[index] = MAKE_PIXEL(r, g, b);
 }
