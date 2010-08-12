@@ -3365,6 +3365,10 @@ void z80_init(int index, int clock, const void *config, int (*irqcallback)(int))
   }
 
   /* Reset registers to their initial values */
+  memset(&Z80, 0, sizeof(Z80));
+  IX = IY = 0xffff; /* IX and IY are FFFF after a reset! */
+  F = ZF;      /* Zero flag is set */
+  SP = 0xdff0; /* fix Shadow Dancer & Ace of Aces (normally set by BIOS) */
   Z80.daisy = config;
   Z80.irq_callback = irqcallback;
 
@@ -3382,26 +3386,16 @@ void z80_init(int index, int clock, const void *config, int (*irqcallback)(int))
  ****************************************************************************/
 void z80_reset(void)
 {
-  /* save previous values */
-  void *config = (void *) Z80.daisy;
-  int (*irqcallback)(int) = Z80.irq_callback;
-
-  /* Reset registers to their initial values */
-  memset(&Z80, 0, sizeof(Z80));
-  Z80.daisy = config;
-  Z80.irq_callback = irqcallback;
-  IX = IY = 0xffff; /* IX and IY are FFFF after a reset! */
-  F = ZF;      /* Zero flag is set */
-
   PC = 0x0000;
   I = 0;
   R = 0;
   R2 = 0;
-  Z80.nmi_state = CLEAR_LINE;
-  Z80.nmi_pending = FALSE;
-  Z80.irq_state = CLEAR_LINE;
+  IM = 0;
+  IFF1 = IFF2 = 0;
+  HALT = 0;
+
   Z80.after_ei = FALSE;
-  Z80.sp.w.l = 0xDFF0; /* fix Shadow Dancer & Ace of Aces (normally set by BIOS) */
+
   WZ=PCD;
 }
 
