@@ -22,7 +22,7 @@
 
 #include "shared.h"
 
-#define GAME_DATABASE_CNT 92
+#define GAME_DATABASE_CNT 93
 
 typedef struct
 {
@@ -89,6 +89,8 @@ rominfo_t game_list[GAME_DATABASE_CNT] =
    "Street Master (KR)"},
   {0xA05258F5, 0, DEVICE_PAD2B, MAPPER_KOREA_MSX, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS2,
    "Won-Si-In (KR)"},
+  {0x06965ED9, 0, DEVICE_PAD2B, MAPPER_KOREA_MSX, DISPLAY_NTSC, TERRITORY_DOMESTIC, CONSOLE_SMS2,
+   "F-1 Spirit - The way to Formula-1 (KR)"},
 
   /* games that require PAL timings (from MEKA.nam by Omar Cornut) */
   {0x72420F38, 0, DEVICE_PAD2B, MAPPER_SEGA, DISPLAY_PAL, TERRITORY_EXPORT, CONSOLE_SMS2,

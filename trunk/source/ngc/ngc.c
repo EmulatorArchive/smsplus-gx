@@ -136,8 +136,7 @@ bool fat_enabled = 0;
 int main (int argc, char *argv[])
 {
 #ifdef HW_RVL
-  /* initialize Wii DVD interface first */
-  DI_Close();
+  /* initialize DVD device */
   DI_Init();
 #endif
 
