@@ -43,5 +43,4 @@ void osd_update_video(void);
 void dump_wram(void);
 void dump_vram(void);
 
-
 #endif /* _MAIN_H_ */

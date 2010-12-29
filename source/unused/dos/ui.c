@@ -11,14 +11,13 @@ void check_ui_keys(void)
 {
     if(check_key(KEY_TILDE))
     {
-        static const char *msg[] = {"EMU2413", "YM2413"};
+        static const char *msg[] = {"OFF", "EMU2413", "YM2413"};
 
-        if(snd.fm_which == SND_EMU2413)
-            snd.fm_which = SND_YM2413;
-        else
-            snd.fm_which = SND_EMU2413;
+        snd.fm ++;
+        if (snd.fm > SND_YM2413)
+            snd.fm_which = SND_NONE;
 
-        add_msg("Using %s FM sound emulator.", msg[snd.fm_which]);
+        add_msg("FM sound emulation: %s", msg[snd.fm]);
         sound_init();
     }
 
@@ -91,10 +90,10 @@ void check_ui_keys(void)
     /* Speed throttling */
     if(check_key(KEY_F10))
     {
-		option.overscan ^= 1;
-		clear(screen);
-		vdp_init();
-		add_msg("option.overscan %s",option.overscan ? "ON":"OFF");
+        option.overscan ^= 1;
+        clear(screen);
+        vdp_init();
+        add_msg("Overscan %s",option.overscan ? "ON":"OFF");
     }
 
     /* Speed throttling */

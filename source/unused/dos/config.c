@@ -133,20 +133,19 @@ void set_option_defaults(void)
   option.no_mmx       = 0;
   option.expand       = 0;
   option.blur         = 0;
-  option.scale        = 1;
+  option.scale        = 0;
   option.scanlines    = 0;
   option.tweak        = 0;
-  option.vsync        = 1;
+  option.vsync        = 0;
   option.throttle     = 0;
-  option.fps          = 1;
+  option.fps          = 0;
   option.sound        = 0;
   option.sndcard      = -1;
   option.sndrate      = 44100;
   option.country      = 0;
   option.console      = 0;
-  option.fm_enable    = 0;
-  option.fm_which     = SND_YM2413;
-  option.overscan     = 1;
+  option.fm    		  = SND_NONE;
+  option.overscan     = 0;
   option.ntsc         = 0;
   option.use_bios     = 0;
   option.spritelimit  = 1;
@@ -237,12 +236,12 @@ void parse_args(int argc, char **argv)
 
     if(stricmp(argv[i], "-jp") == 0)
     {
-      option.country = TERRITORY_DOMESTIC;
+      option.country = 3;
     }
 
     if(stricmp(argv[i], "-fm") == 0)
     {
-      option.fm_enable = 1;
+      option.fm = SND_EMU2413;
     }
 
     if(stricmp(argv[i], "-vdriver") == 0 && left)

@@ -1,7 +1,33 @@
 
- Change log
+CHANGELOG
+
+NOTE:
+DOS and SDL ports are based on smsplus 1.3, with all changes backported from smsplus-gx Wii & GCN ports
+Changes to the rendering code brought in smsplus 1.4 by Charles MacDonald (removed tile cache) is not included.
+
+??/??/????: Eke Eke
+- updated Z80 core to last version (fix undocumented BIT instructions & interrupts timing)
+- improved Z80 timing accuracy: fixes sky flickering in Shadow of the Beast
+- improved VDP accuracy (Status flags, sprites, HV counters, etc), Sms Plus now passes all tests in Flubba's VDP Test Program
+- improved Sega Phaser autodetection: fixes lightgun support in some games
+- improved Mappers emulation
+- fixed FM unit & I/O chip concurrent access (Wonderboy III in Dragon's Trap, Time Soldiers)
+- fixed Korean BIOS support
+- fixed 3D-Glasses faking initial state
+- adjusted SN76489 volume to real SMS2 output
+- added emulation of new Korean 8k paging chip (Omar Cornut, Charles MacDonald)
+- added support for new released Korean games (Omar Cornut, Charles MacDonald)
+- added SG-1000 emulation
+- added Colecovision emulation
+- removed support for 8-bit color.
+- various code cleanup & improvments
+
+14/12/2008: Eke-Eke
+- added Blargg's NTSC Filter support (NTSC video artifacts emulation)
 
 15/07/2008: Eke-Eke
+- added an option to disable original Sprite Limit emulation (reduce sprite flickering)
+- added an option to display the hidden parts of the original Game Gear LCD screen
 - added Laser Ghost in "Light Phaser" game database
 
 01/06/2008: Eke-Eke
