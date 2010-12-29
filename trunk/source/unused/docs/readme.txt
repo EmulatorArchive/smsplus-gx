@@ -217,7 +217,6 @@
     -jp             use Japanese console type.
     -fm             required to enable YM2413 sound.
     -info           show library versions.
-    -codies         force Codemasters mapper
 
  Here is a list of all the video drivers you can pass as a parameter
  to the '-vdriver' option:
